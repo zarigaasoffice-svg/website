@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["http://localhost:5157", "https://zarigaas.firebaseapp.com", "https://zarigaas.web.app"],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Content-Length", "Content-Range"]
+  }
+]

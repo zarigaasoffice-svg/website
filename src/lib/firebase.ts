@@ -26,6 +26,8 @@ if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_USE_EMULATOR === 'true'
   connectFirestoreEmulator(db, 'localhost', 8080);
   connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
   connectStorageEmulator(storage, 'localhost', 9199);
+} else {
+  console.log('Firebase Storage initialized with bucket:', firebaseConfig.storageBucket);
 }
 
 export { db, auth, storage };

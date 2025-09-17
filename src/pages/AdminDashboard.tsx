@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, Plus, Edit2, Upload, Save, Package, MessageCircle, TrendingUp } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
+import { CloudinaryImage } from '../components/CloudinaryImage';
 import { 
   collection,
   doc,
@@ -17,9 +18,9 @@ import {
   QuerySnapshot,
   DocumentData
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from '@firebase/storage';
-import { db, storage } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import { Button } from '../components/ui/button';
+import { uploadImage, getOptimizedImageUrl } from '../lib/cloudinary';
 
 // Base types
 import { SareeBase, Saree as SareeType } from '../contexts/DataContext';
@@ -51,6 +52,15 @@ type AdminTab = 'sarees' | 'users' | 'stats' | 'pitches' | 'adminMessages';
 // Use imported type
 type Saree = SareeType;
 
+// Initialize empty message object
+const emptyMessage = {
+  content: '',
+  imageUrl: '',
+  referencePostId: '',
+  referencePostTitle: '',
+  replyTo: ''
+};
+
 // Main component
 export default function AdminDashboard() {
   const { sarees, pitches, refreshSarees } = useData();
@@ -70,6 +80,21 @@ export default function AdminDashboard() {
     pitch_count: 0
   });
 
+  // Function to reset form to initial state
+  const resetForm = () => {
+    setNewSaree({
+      name: '',
+      description: '',
+      price: '',
+      image_url: '',
+      price_type: 'fixed',
+      stock_status: 'in_stock',
+      pitch_count: 0
+    });
+    setEditingSaree(null);
+    setError(null);
+  };
+
   // Error and loading states
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,12 +102,8 @@ export default function AdminDashboard() {
   // Message states
   const [messages, setMessages] = useState<AdminMessage[]>([]);
   const [showMessageCompose, setShowMessageCompose] = useState(false);
-  const [newMessage, setNewMessage] = useState({
-    content: '',
-    imageUrl: '',
-    referencePostId: '',
-    referencePostTitle: ''
-  });
+  const [selectedMessage, setSelectedMessage] = useState<AdminMessage | null>(null);
+  const [newMessage, setNewMessage] = useState(emptyMessage);
 
   const checkAdminAccess = () => {
     if (!currentUser) {
@@ -199,6 +220,13 @@ export default function AdminDashboard() {
     .filter(s => s.price_type === 'fixed' && s.price)
     .reduce((sum, s) => sum + (s.price || 0), 0);
 
+  const handleCancel = () => {
+    setNewSaree(emptyProduct);
+    setEditingSaree(null);
+    setShowAddSaree(false);
+    setError(null);
+  };
+
   const handleAddSaree = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -208,33 +236,55 @@ export default function AdminDashboard() {
     setError(null);
     
     try {
-      // Validate required fields
-      if (!newSaree.name || (newSaree.price_type === 'fixed' && !newSaree.price)) {
-        throw new Error('Please fill all required fields');
+      // Basic validation
+      if (!newSaree.name.trim()) {
+        throw new Error('Please enter a product name');
       }
 
-      // Convert form data to database format
-      // Convert form data to database format
-      // Verify we have a valid image URL
-      if (!newSaree.image_url) {
-        throw new Error('Please upload a product image');
-      }
-
-      // Verify the image URL is still accessible
-      try {
-        const response = await fetch(newSaree.image_url);
-        if (!response.ok) {
-          throw new Error('Failed to validate product image URL');
+      // Price validation for fixed price items
+      let price: number | null = null;
+      if (newSaree.price_type === 'fixed') {
+        const parsedPrice = parseFloat(newSaree.price?.toString() || '');
+        if (isNaN(parsedPrice) || parsedPrice < 0) {
+          throw new Error('Please enter a valid price');
         }
-        console.log('Pre-save image URL validation successful');
-      } catch (err) {
-        console.error('Pre-save image URL validation failed:', err);
-        throw new Error('Failed to validate product image URL');
+        price = parsedPrice;
       }
 
+      // Image validation
+      if (!newSaree.image_url) {
+        throw new Error('Please provide a product image');
+      }
+
+      // If it's a Cloudinary URL, accept it directly
+      if (newSaree.image_url.includes('res.cloudinary.com')) {
+        // URL is already from Cloudinary, use it as is
+      } else if (newSaree.image_url.startsWith('http')) {
+        // For external URLs, try to upload to Cloudinary
+        try {
+          const response = await fetch(newSaree.image_url);
+          const blob = await response.blob();
+          const file = new File([blob], 'image.jpg', { type: blob.type });
+          const uploadResult = await uploadImage(file);
+          if (!uploadResult || !uploadResult.url) {
+            throw new Error('Failed to process external image');
+          }
+          newSaree.image_url = uploadResult.url;
+        } catch (err) {
+          throw new Error('Failed to process the provided image URL. Please try uploading the image directly.');
+        }
+      } else {
+        throw new Error('Please provide a valid image URL or upload an image');
+      }
+
+      // Prepare data for saving
       const sareeToAdd = {
-        ...newSaree,
-        price: newSaree.price ? parseFloat(newSaree.price) : null,
+        name: newSaree.name.trim(),
+        description: newSaree.description?.trim() || '',
+        price,
+        image_url: newSaree.image_url,
+        price_type: newSaree.price_type as 'fixed' | 'dm',
+        stock_status: newSaree.stock_status as 'in_stock' | 'out_of_stock',
         pitch_count: 0,
         created_at: serverTimestamp(),
         updated_at: serverTimestamp()
@@ -253,15 +303,7 @@ export default function AdminDashboard() {
       console.log('Saved saree document with ID:', docRef.id);
       await refreshSarees();
       setShowAddSaree(false);
-      setNewSaree({
-        name: '',
-        description: '',
-        image_url: '',
-        price: '',
-        price_type: 'fixed',
-        stock_status: 'in_stock',
-        pitch_count: 0
-      });
+      resetForm();
     } catch (err) {
       console.error('Error adding saree:', err);
       setError(err instanceof Error ? err.message : 'Error adding saree');
@@ -284,26 +326,59 @@ export default function AdminDashboard() {
     setError(null);
     
     try {
-      // Validate required fields
-      if (!editingSaree.name || 
-          (editingSaree.price_type === 'fixed' && editingSaree.price === null)) {
-        throw new Error('Please fill all required fields');
+      // Basic validation
+      if (!editingSaree.name.trim()) {
+        throw new Error('Product name is required');
       }
 
-      // Validate price if fixed
-      if (editingSaree.price_type === 'fixed' && 
-          (typeof editingSaree.price !== 'number' || editingSaree.price < 0)) {
-        throw new Error('Please enter a valid price');
+      // Parse and validate price
+      let price: number | null = null;
+      if (editingSaree.price_type === 'fixed') {
+        const parsedPrice = parseFloat(editingSaree.price);
+        if (isNaN(parsedPrice) || parsedPrice < 0) {
+          throw new Error('Please enter a valid price');
+        }
+        price = parsedPrice;
       }
 
+      // Image validation and processing
+      if (editingSaree.image_url && !editingSaree.image_url.includes('res.cloudinary.com')) {
+        if (editingSaree.image_url.startsWith('http')) {
+          try {
+            const response = await fetch(editingSaree.image_url);
+            const blob = await response.blob();
+            const file = new File([blob], 'image.jpg', { type: blob.type });
+            const uploadResult = await uploadImage(file);
+            if (!uploadResult || !uploadResult.url) {
+              throw new Error('Failed to process external image');
+            }
+            editingSaree.image_url = uploadResult.url;
+          } catch (err) {
+            throw new Error('Failed to process the provided image URL. Please try uploading the image directly.');
+          }
+        } else {
+          throw new Error('Please provide a valid image URL or upload an image');
+        }
+      }
+
+      // Prepare update data
+      const updateData = {
+        name: editingSaree.name.trim(),
+        description: editingSaree.description?.trim() || '',
+        price: editingSaree.price_type === 'fixed' ? price : null,
+        image_url: editingSaree.image_url,
+        price_type: editingSaree.price_type as 'fixed' | 'dm',
+        stock_status: editingSaree.stock_status as 'in_stock' | 'out_of_stock',
+        updated_at: serverTimestamp()
+      };
+
+      console.log('Updating saree with data:', { id: editingSaree.id, ...updateData });
       const sareeRef = doc(db, 'sarees', editingSaree.id);
-      const { id, ...updateData } = editingSaree;
-      await updateDoc(sareeRef, {
-        ...updateData,
-        updatedAt: serverTimestamp() as Timestamp
-      });
+      await updateDoc(sareeRef, updateData); // updateData already includes updated_at
       await refreshSarees();
+      setShowAddSaree(false);
       setEditingSaree(null);
+      resetForm();
     } catch (err) {
       console.error('Error updating saree:', err);
       setError(err instanceof Error ? err.message : 'Error updating saree');
@@ -330,16 +405,10 @@ export default function AdminDashboard() {
       const sareeRef = doc(db, 'sarees', saree.id);
       await deleteDoc(sareeRef);
       
-      // Delete the main image from storage
-      if (saree.image_url && saree.image_url.startsWith('https://firebasestorage.googleapis.com')) {
-        try {
-          // Get the storage path from the URL
-          const imageRef = ref(storage, new URL(saree.image_url).pathname);
-          await deleteObject(imageRef);
-        } catch (imgErr) {
-          console.error('Error deleting image:', imgErr);
-          // Continue even if image deletion fails
-        }
+      // With Cloudinary, we don't need to manually delete images
+      // Images can be managed through the Cloudinary dashboard or Admin API
+      if (saree.image_url) {
+        console.log('Image URL will remain in Cloudinary:', saree.image_url);
       }
 
       await refreshSarees();
@@ -376,22 +445,42 @@ export default function AdminDashboard() {
         throw new Error('File size exceeds 5MB limit.');
       }
 
-      // Generate a unique filename
-      const fileExt = file.name.split('.').pop();
-      const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const storageRef = ref(storage, `messages/${uniqueFileName}`);
-      
-      // Upload the file
-      await uploadBytes(storageRef, file, {
-        contentType: file.type,
-        customMetadata: {
-          originalName: file.name,
-          uploadedBy: currentUser?.email || 'unknown'
+      if (!currentUser) {
+        throw new Error('You must be logged in to upload files.');
+      }
+
+      // Prepare form data for Cloudinary upload
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+      formData.append("folder", "zarigaas/messages");
+
+      // Add metadata
+      formData.append("context", JSON.stringify({
+        alt: file.name,
+        caption: `Message attachment by ${currentUser.email || 'unknown'}`,
+        userId: currentUser.uid
+      }));
+
+      console.log('Starting file upload to Cloudinary...');
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
         }
-      });
-      
-      // Get the download URL
-      const imageUrl = await getDownloadURL(storageRef);
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to upload image: ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      console.log('Cloudinary upload successful:', data);
+
+      // Get the secure URL from Cloudinary
+      const imageUrl = data.secure_url;
       setNewMessage(prev => ({ ...prev, imageUrl }));
     } catch (err) {
       console.error('Error uploading file:', err);
@@ -434,7 +523,8 @@ export default function AdminDashboard() {
         content: '',
         imageUrl: '',
         referencePostId: '',
-        referencePostTitle: ''
+        referencePostTitle: '',
+        replyTo: ''
       });
     } catch (err) {
       console.error('Error sending message:', err);
@@ -445,6 +535,8 @@ export default function AdminDashboard() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!checkAdminAccess()) return;
+
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -454,60 +546,102 @@ export default function AdminDashboard() {
     try {
       const file = files[0];
       
-      // Validate file type
+      // Validate file type and size
+      const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+      
       if (!ALLOWED_TYPES.includes(file.type)) {
         throw new Error('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
       }
 
-      // Validate file size
       if (file.size > MAX_FILE_SIZE) {
         throw new Error('File size exceeds 5MB limit.');
       }
 
-      // Generate a unique filename
-      const fileExt = file.name.split('.').pop();
-      const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const storageRef = ref(storage, `sarees/${uniqueFileName}`);
-      
-      // Upload the file with metadata
-      await uploadBytes(storageRef, file, {
-        contentType: file.type,
-        customMetadata: {
-          originalName: file.name,
-          uploadedBy: currentUser?.email || 'unknown'
-        }
-      });
-      
-      // Get the download URL
-      const imageUrl = await getDownloadURL(storageRef);
-      console.log('Uploaded image URL:', imageUrl);
-      
-      // Verify the URL is accessible
-      try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-          throw new Error(`Image URL validation failed: ${response.statusText}`);
-        }
-        console.log('Image URL validated successfully');
-      } catch (err) {
-        console.error('Image URL validation failed:', err);
-        throw new Error('Failed to validate uploaded image URL');
+      if (!currentUser) {
+        throw new Error('You must be logged in to upload files.');
       }
-      
+
+      // Upload to Cloudinary
+      const uploadResult = await uploadImage(file);
+      if (!uploadResult || !uploadResult.url) {
+        throw new Error('Failed to upload image');
+      }
+      console.log('Cloudinary upload successful:', uploadResult);
+
+      // Use the direct secure URL from Cloudinary
+      const optimizedUrl = uploadResult.url;
+
+      // Update state with the optimized image URL
       if (editingSaree) {
-        setEditingSaree({ ...editingSaree, image_url: imageUrl });
+        setEditingSaree({ ...editingSaree, image_url: optimizedUrl });
       } else {
-        setNewSaree({ ...newSaree, image_url: imageUrl });
+        setNewSaree({ ...newSaree, image_url: optimizedUrl });
       }
       
-      // Log the state update
-      console.log('Updated image URL in state:', editingSaree ? 'editing mode' : 'new saree mode');
+      console.log('Image URL updated in state:', optimizedUrl);
     } catch (err) {
       console.error('Error uploading file:', err);
       setError(err instanceof Error ? err.message : 'Error uploading file');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle message selection
+  const handleSelectMessage = (message: AdminMessage) => {
+    setSelectedMessage(message);
+    if (!message.isRead && isAdmin) {
+      handleMarkMessageRead(message.id!);
+    }
+  };
+
+  // Handle new message submission with error handling
+  const resetMessage = () => {
+    setNewMessage(emptyMessage);
+    setShowMessageCompose(false);
+    setSelectedMessage(null);
+  };
+
+  const handleNewMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) {
+      setError('Please log in to send messages');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const messageData = {
+        userId: currentUser.uid,
+        userEmail: currentUser.email || 'unknown',
+        content: newMessage.content.trim(),
+        imageUrl: newMessage.imageUrl,
+        replyTo: newMessage.replyTo,
+        createdAt: new Date(),
+        isRead: false
+      };
+
+      await addDoc(collection(db, 'adminMessages'), messageData);
+      resetMessage();
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send message');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const emptyProduct: SareeFormData = {
+    name: '',
+    description: '',
+    price: '',
+    image_url: '',
+    price_type: 'fixed' as const,
+    stock_status: 'in_stock' as const,
+    pitch_count: 0
   };
 
   return (
@@ -518,32 +652,110 @@ export default function AdminDashboard() {
           <div className="flex flex-col items-end">
             <span className="text-sm font-medium text-gray-900">{currentUser?.displayName || 'Admin'}</span>
             <span className="text-xs text-gray-500">{currentUser?.email}</span>
+            {!isAdmin && (
+              <button
+                onClick={() => setShowMessageCompose(true)}
+                className="mt-2 flex items-center gap-2 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                <MessageCircle size={16} />
+                Message Admin
+              </button>
+            )}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 sm:gap-4">
+
+        {/* Message Compose Modal */}
+        {showMessageCompose && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+              <h3 className="text-lg font-medium mb-4">Message Admin</h3>
+              <form onSubmit={handleNewMessage} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    value={newMessage.content}
+                    onChange={(e) => setNewMessage(prev => ({ ...prev, content: e.target.value }))}
+                    className="w-full p-2 border rounded min-h-[100px]"
+                    placeholder="Type your message here..."
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={resetMessage}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !newMessage.content.trim()}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                  >
+                    {loading ? 'Sending...' : 'Send Message'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {/* Mobile Menu */}
+        <div className="block md:hidden mb-4">
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as AdminTab)}
+            className="w-full p-2 border rounded bg-white"
+          >
+            <option value="sarees">Sarees</option>
+            <option value="pitches">Pitches</option>
+            <option value="adminMessages">Admin Messages</option>
+          </select>
+        </div>
+
+        {/* Desktop Menu */}
+        <div className="hidden md:flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab('sarees')}
-            className={`px-4 py-2 rounded transition-colors ${
-              activeTab === 'sarees' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
+            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+              activeTab === 'sarees' 
+                ? 'bg-blue-500 text-white shadow-md' 
+                : 'bg-gray-100 hover:bg-gray-200 hover:shadow'
             }`}
           >
-            Sarees
+            <span className="flex items-center gap-2">
+              <Package size={18} />
+              <span>Sarees</span>
+            </span>
           </button>
           <button
             onClick={() => setActiveTab('pitches')}
-            className={`px-4 py-2 rounded transition-colors ${
-              activeTab === 'pitches' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
+            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+              activeTab === 'pitches' 
+                ? 'bg-blue-500 text-white shadow-md' 
+                : 'bg-gray-100 hover:bg-gray-200 hover:shadow'
             }`}
           >
-            Pitches
+            <span className="flex items-center gap-2">
+              <MessageCircle size={18} />
+              <span>Pitches</span>
+            </span>
           </button>
           <button
             onClick={() => setActiveTab('adminMessages')}
-            className={`px-4 py-2 rounded transition-colors ${
-              activeTab === 'adminMessages' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
+            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+              activeTab === 'adminMessages' 
+                ? 'bg-blue-500 text-white shadow-md' 
+                : 'bg-gray-100 hover:bg-gray-200 hover:shadow'
             }`}
           >
-            Admin Messages
+            <span className="flex items-center gap-2">
+              <MessageCircle size={18} />
+              <span>Messages</span>
+            </span>
           </button>
         </div>
       </header>
@@ -555,33 +767,39 @@ export default function AdminDashboard() {
       )}
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center gap-4">
-            <Package className="text-blue-500" size={24} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <Package className="text-blue-500" size={24} />
+            </div>
             <div>
-              <h3 className="text-lg font-medium">Total Products</h3>
-              <p className="text-2xl font-bold">{sarees.length}</p>
+              <h3 className="text-sm md:text-lg font-medium">Total Products</h3>
+              <p className="text-xl md:text-2xl font-bold">{sarees.length}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center gap-4">
-            <MessageCircle className="text-green-500" size={24} />
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="bg-green-100 p-2 rounded-lg">
+              <MessageCircle className="text-green-500" size={24} />
+            </div>
             <div>
-              <h3 className="text-lg font-medium">Total Pitches</h3>
-              <p className="text-2xl font-bold">{totalPitches}</p>
+              <h3 className="text-sm md:text-lg font-medium">Total Pitches</h3>
+              <p className="text-xl md:text-2xl font-bold">{totalPitches}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center gap-4">
-            <TrendingUp className="text-purple-500" size={24} />
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="bg-purple-100 p-2 rounded-lg">
+              <TrendingUp className="text-purple-500" size={24} />
+            </div>
             <div>
-              <h3 className="text-lg font-medium">Total Revenue</h3>
-              <p className="text-2xl font-bold">₹{totalRevenue}</p>
+              <h3 className="text-sm md:text-lg font-medium">Total Revenue</h3>
+              <p className="text-xl md:text-2xl font-bold">₹{totalRevenue.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -602,13 +820,13 @@ export default function AdminDashboard() {
           </div>
 
           {(showAddSaree || editingSaree) && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full relative">
                 <h3 className="text-lg font-medium mb-4">
                   {editingSaree ? 'Edit Saree' : 'Add New Saree'}
                 </h3>
-                <form onSubmit={editingSaree ? handleUpdateSaree : handleAddSaree}>
-                  <div className="space-y-4">
+                <form onSubmit={editingSaree ? handleUpdateSaree : handleAddSaree} className="space-y-6">
+                  <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                     <div>
                       <label className="block text-sm font-medium mb-1">
                         Name
@@ -633,23 +851,57 @@ export default function AdminDashboard() {
                       <div>
                         {(editingSaree?.image_url || newSaree.image_url) ? (
                           <div className="mb-2">
-                            <img 
+                            <CloudinaryImage 
                               src={editingSaree?.image_url || newSaree.image_url} 
                               alt="Preview" 
                               className="h-32 w-32 object-cover rounded"
+                              width={128}
+                              height={128}
                             />
                           </div>
                         ) : null}
-                        <label className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded cursor-pointer hover:bg-gray-200">
-                          <Upload size={20} />
-                          <span>Upload Image</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleFileUpload}
-                          />
-                        </label>
+                        <div className="flex flex-col gap-2">
+                          <label className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded cursor-pointer hover:bg-gray-200">
+                            <Upload size={20} />
+                            <span>Upload Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleFileUpload}
+                            />
+                          </label>
+                          
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Or paste image URL here"
+                              value={editingSaree?.image_url || newSaree.image_url}
+                              onChange={(e) => {
+                                const url = e.target.value;
+                                if (editingSaree) {
+                                  setEditingSaree({ ...editingSaree, image_url: url });
+                                } else {
+                                  setNewSaree({ ...newSaree, image_url: url });
+                                }
+                              }}
+                              className="w-full p-2 border rounded pr-20"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (editingSaree) {
+                                  setEditingSaree({ ...editingSaree, image_url: '' });
+                                } else {
+                                  setNewSaree({ ...newSaree, image_url: '' });
+                                }
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -717,6 +969,8 @@ export default function AdminDashboard() {
                       onClick={() => {
                         setEditingSaree(null);
                         setShowAddSaree(false);
+                        setNewSaree(emptyProduct);
+                        setError(null);
                       }}
                       className="px-4 py-2 border rounded hover:bg-gray-50"
                       disabled={loading}
@@ -725,11 +979,11 @@ export default function AdminDashboard() {
                     </button>
                     <button
                       type="submit"
-                      className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                      disabled={loading}
+                      className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+                      disabled={loading || (!newSaree.image_url && !editingSaree?.image_url)}
                     >
                       <Save size={20} />
-                      {loading ? 'Saving...' : 'Save'}
+                      {loading ? 'Saving...' : editingSaree ? 'Update' : 'Save'}
                     </button>
                   </div>
                 </form>
@@ -737,22 +991,15 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {sarees.map((saree) => (
-              <div key={saree.id} className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="relative w-full h-48">
-                  <img
+              <div key={saree.id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div className="relative w-full aspect-[3/4]">
+                  <CloudinaryImage
                     src={saree.image_url}
                     alt={saree.name}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      console.error(`Failed to load image for ${saree.name}:`, saree.image_url);
-                      target.src = `https://images.pexels.com/photos/7673219/pexels-photo-7673219.jpeg?auto=compress&cs=tinysrgb&w=600`;
-                    }}
-                    onLoad={() => {
-                      console.log(`Successfully loaded image for ${saree.name}:`, saree.image_url);
-                    }}
+                    width={600}
                   />
                 </div>
                 <div className="p-4">
@@ -1001,7 +1248,8 @@ export default function AdminDashboard() {
                           content: '',
                           imageUrl: '',
                           referencePostId: '',
-                          referencePostTitle: ''
+                          referencePostTitle: '',
+                          replyTo: ''
                         });
                       }}
                       className="px-4 py-2 border rounded hover:bg-gray-50"
