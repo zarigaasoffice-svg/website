@@ -88,10 +88,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribeSarees = onSnapshot(sareesQuery, 
       (snapshot) => {
-        const sareeData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Saree));
+        const sareeData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          // Ensure the image_url is a valid string
+          const image_url = typeof data.image_url === 'string' ? data.image_url : '';
+          console.log(`Saree ${doc.id} image URL:`, image_url);
+          
+          return {
+            id: doc.id,
+            ...data,
+            image_url // Override with validated URL
+          } as Saree;
+        });
         setSarees(sareeData);
         setLoading(false);
       },

@@ -39,7 +39,23 @@ export default function SareeCard({ saree }: SareeCardProps) {
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
+              console.error(`Failed to load image for ${saree.name}:`, saree.image_url);
+              // Log additional debug info
+              console.error('Image load error details:', {
+                sareeId: saree.id,
+                imageUrl: saree.image_url,
+                timestamp: new Date().toISOString()
+              });
               target.src = `https://images.pexels.com/photos/7673219/pexels-photo-7673219.jpeg?auto=compress&cs=tinysrgb&w=600`;
+            }}
+            onLoad={() => {
+              console.log(`Successfully loaded image for ${saree.name}:`, saree.image_url);
+              // Log successful load details
+              console.log('Image load success details:', {
+                sareeId: saree.id,
+                imageUrl: saree.image_url,
+                timestamp: new Date().toISOString()
+              });
             }}
           />
           

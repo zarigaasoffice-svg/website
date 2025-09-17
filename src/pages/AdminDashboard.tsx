@@ -209,12 +209,29 @@ export default function AdminDashboard() {
     
     try {
       // Validate required fields
-      if (!newSaree.name || !newSaree.image_url || (newSaree.price_type === 'fixed' && !newSaree.price)) {
+      if (!newSaree.name || (newSaree.price_type === 'fixed' && !newSaree.price)) {
         throw new Error('Please fill all required fields');
       }
 
       // Convert form data to database format
       // Convert form data to database format
+      // Verify we have a valid image URL
+      if (!newSaree.image_url) {
+        throw new Error('Please upload a product image');
+      }
+
+      // Verify the image URL is still accessible
+      try {
+        const response = await fetch(newSaree.image_url);
+        if (!response.ok) {
+          throw new Error('Failed to validate product image URL');
+        }
+        console.log('Pre-save image URL validation successful');
+      } catch (err) {
+        console.error('Pre-save image URL validation failed:', err);
+        throw new Error('Failed to validate product image URL');
+      }
+
       const sareeToAdd = {
         ...newSaree,
         price: newSaree.price ? parseFloat(newSaree.price) : null,
@@ -231,7 +248,9 @@ export default function AdminDashboard() {
         }
       }
 
-      await addDoc(collection(db, 'sarees'), sareeToAdd);
+      console.log('Saving saree with image URL:', sareeToAdd.image_url);
+      const docRef = await addDoc(collection(db, 'sarees'), sareeToAdd);
+      console.log('Saved saree document with ID:', docRef.id);
       await refreshSarees();
       setShowAddSaree(false);
       setNewSaree({
@@ -266,7 +285,7 @@ export default function AdminDashboard() {
     
     try {
       // Validate required fields
-      if (!editingSaree.name || !editingSaree.image_url || 
+      if (!editingSaree.name || 
           (editingSaree.price_type === 'fixed' && editingSaree.price === null)) {
         throw new Error('Please fill all required fields');
       }
@@ -461,12 +480,28 @@ export default function AdminDashboard() {
       
       // Get the download URL
       const imageUrl = await getDownloadURL(storageRef);
+      console.log('Uploaded image URL:', imageUrl);
+      
+      // Verify the URL is accessible
+      try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+          throw new Error(`Image URL validation failed: ${response.statusText}`);
+        }
+        console.log('Image URL validated successfully');
+      } catch (err) {
+        console.error('Image URL validation failed:', err);
+        throw new Error('Failed to validate uploaded image URL');
+      }
       
       if (editingSaree) {
         setEditingSaree({ ...editingSaree, image_url: imageUrl });
       } else {
         setNewSaree({ ...newSaree, image_url: imageUrl });
       }
+      
+      // Log the state update
+      console.log('Updated image URL in state:', editingSaree ? 'editing mode' : 'new saree mode');
     } catch (err) {
       console.error('Error uploading file:', err);
       setError(err instanceof Error ? err.message : 'Error uploading file');
@@ -595,21 +630,19 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-medium mb-1">
                         Image
                       </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={editingSaree?.image_url || newSaree.image_url}
-                          onChange={(e) =>
-                            editingSaree
-                              ? setEditingSaree({ ...editingSaree, image_url: e.target.value })
-                              : setNewSaree({ ...newSaree, image_url: e.target.value })
-                          }
-                          className="w-full p-2 border rounded"
-                          placeholder="Image URL"
-                          required
-                        />
+                      <div>
+                        {(editingSaree?.image_url || newSaree.image_url) ? (
+                          <div className="mb-2">
+                            <img 
+                              src={editingSaree?.image_url || newSaree.image_url} 
+                              alt="Preview" 
+                              className="h-32 w-32 object-cover rounded"
+                            />
+                          </div>
+                        ) : null}
                         <label className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded cursor-pointer hover:bg-gray-200">
                           <Upload size={20} />
+                          <span>Upload Image</span>
                           <input
                             type="file"
                             accept="image/*"
@@ -707,17 +740,27 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sarees.map((saree) => (
               <div key={saree.id} className="bg-white rounded-lg shadow overflow-hidden">
-                <img
-                  src={saree.image_url}
-                  alt={saree.name}
-                  className="w-full h-48 object-cover"
-                />
+                <div className="relative w-full h-48">
+                  <img
+                    src={saree.image_url}
+                    alt={saree.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      console.error(`Failed to load image for ${saree.name}:`, saree.image_url);
+                      target.src = `https://images.pexels.com/photos/7673219/pexels-photo-7673219.jpeg?auto=compress&cs=tinysrgb&w=600`;
+                    }}
+                    onLoad={() => {
+                      console.log(`Successfully loaded image for ${saree.name}:`, saree.image_url);
+                    }}
+                  />
+                </div>
                 <div className="p-4">
                   <h3 className="font-medium">{saree.name}</h3>
                   <div className="flex items-center justify-between mt-2">
                     <div className="text-gray-500">
                       {saree.price_type === 'fixed' ? (
-                        <span>?{saree.price}</span>
+                        <span>₹{saree.price}</span>
                       ) : (
                         <span>DM for price</span>
                       )}
@@ -770,9 +813,17 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-4">
                   {pitch.saree && (
                     <img
-                      src={pitch.saree.image_url}
-                      alt={pitch.saree.name}
+                      src={pitch.saree?.image_url}
+                      alt={pitch.saree?.name}
                       className="w-16 h-16 object-cover rounded"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        console.error(`Failed to load pitch image for ${pitch.saree?.name || 'unknown'}:`, pitch.saree?.image_url);
+                        target.src = `https://images.pexels.com/photos/7673219/pexels-photo-7673219.jpeg?auto=compress&cs=tinysrgb&w=600`;
+                      }}
+                      onLoad={() => {
+                        console.log(`Successfully loaded pitch image for ${pitch.saree?.name || 'unknown'}:`, pitch.saree?.image_url);
+                      }}
                     />
                   )}
                   <div className="flex-1">
