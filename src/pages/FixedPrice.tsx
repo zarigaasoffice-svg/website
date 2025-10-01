@@ -5,7 +5,10 @@ import SareeCard from '../components/SareeCard';
 export default function FixedPrice() {
   const { sarees, loading } = useData();
 
-  const fixedPriceSarees = sarees.filter(saree => saree.price_type === 'fixed');
+  // Filter for fixed price sarees first, then for stock status
+  const fixedPriceSarees = sarees.filter(saree => 
+    saree.priceType === 'fixed' // Show all fixed price items in this section
+  );
 
   return (
     <div className="min-h-screen bg-black py-16">

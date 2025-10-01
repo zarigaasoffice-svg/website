@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, ShoppingBag } from 'lucide-react';
+import { Heart, MessageCircle, ShoppingBag, SendHorizonal } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import PitchModal from './PitchModal';
+import MessageModal from './MessageModal';
 import type { Saree } from '../contexts/DataContext';
 
 interface SareeCardProps {
@@ -11,49 +12,60 @@ interface SareeCardProps {
 
 export default function SareeCard({ saree }: SareeCardProps) {
   const [showPitchModal, setShowPitchModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const { user } = useAuth();
   const { addPitch } = useData();
 
-  const handleQuickPitch = async () => {
+  const handleAction = () => {
     if (!user) {
       setShowPitchModal(true);
       return;
     }
 
-    const name = user.user_metadata?.full_name || user.email || '';
-    const email = user.email || '';
-    
-    await addPitch(saree.id, name, email, 'Quick pitch from logged-in user', user.id);
+    if (saree.priceType === 'fixed') {
+      setShowMessageModal(true);
+    } else {
+      setShowPitchModal(true);
+    }
   };
 
-  const isOutOfStock = saree.stock_status === 'out_of_stock';
+  const isOutOfStock = saree.stock === 0;
+  const hasStock = typeof saree.stock === 'number' && saree.stock > 0;
 
   return (
     <>
-      <div className={`group relative bg-gradient-to-br from-gray-900 to-black rounded-xl overflow-hidden shadow-xl border border-gray-800 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl ${isOutOfStock ? 'opacity-75' : ''}`}>
+      <div className={`group relative bg-gradient-to-br from-gray-900 to-black rounded-xl overflow-hidden shadow-xl border border-gray-800 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl`}>
+        {/* Stock Status Badge */}
+        <div className="absolute top-4 right-4 z-10">
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+            isOutOfStock ? 'bg-red-500/90 text-white' : hasStock ? 'bg-green-500/90 text-white' : 'bg-yellow-500/90 text-white'
+          }`}>
+            {isOutOfStock ? 'Out of Stock' : hasStock ? `${saree.stock} Available` : 'Stock Status Unknown'}
+          </span>
+        </div>
         {/* Image Container */}
         <div className="aspect-[3/4] overflow-hidden relative">
           <img
-            src={saree.image_url}
+            src={saree.imageUrl}
             alt={saree.name}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              console.error(`Failed to load image for ${saree.name}:`, saree.image_url);
+              console.error(`Failed to load image for ${saree.name}:`, saree.imageUrl);
               // Log additional debug info
               console.error('Image load error details:', {
                 sareeId: saree.id,
-                imageUrl: saree.image_url,
+                imageUrl: saree.imageUrl,
                 timestamp: new Date().toISOString()
               });
               target.src = `https://images.pexels.com/photos/7673219/pexels-photo-7673219.jpeg?auto=compress&cs=tinysrgb&w=600`;
             }}
             onLoad={() => {
-              console.log(`Successfully loaded image for ${saree.name}:`, saree.image_url);
+              console.log(`Successfully loaded image for ${saree.name}:`, saree.imageUrl);
               // Log successful load details
               console.log('Image load success details:', {
                 sareeId: saree.id,
-                imageUrl: saree.image_url,
+                imageUrl: saree.imageUrl,
                 timestamp: new Date().toISOString()
               });
             }}
@@ -73,16 +85,22 @@ export default function SareeCard({ saree }: SareeCardProps) {
           </div>
 
           {/* Stock Status */}
-          {isOutOfStock && (
+          {isOutOfStock ? (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
               <span className="text-white font-semibold text-lg tracking-wider">OUT OF STOCK</span>
+            </div>
+          ) : (
+            <div className="absolute top-4 left-4">
+              <div className="bg-green-500/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium">
+                IN STOCK
+              </div>
             </div>
           )}
 
           {/* Pitch Count Badge */}
           <div className="absolute top-4 left-4 bg-rose-gold/90 backdrop-blur-sm text-black px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
             <MessageCircle className="w-3 h-3" />
-            <span>{saree.pitch_count} pitches</span>
+            <span>{(saree as any).pitch_count || 0} pitches</span>
           </div>
         </div>
 
@@ -94,8 +112,8 @@ export default function SareeCard({ saree }: SareeCardProps) {
           
           <div className="flex items-center justify-between mb-4">
             <div className="text-rose-gold font-semibold text-lg">
-              {saree.price_type === 'fixed' ? (
-                `₹${saree.price?.toLocaleString()}`
+              {saree.priceType === 'fixed' ? (
+                `₹${saree.price.toLocaleString()}`
               ) : (
                 'Rate on Request'
               )}
@@ -109,18 +127,29 @@ export default function SareeCard({ saree }: SareeCardProps) {
             </div>
           </div>
 
-          {/* Pitch Button */}
+          {/* Pitch/Message Button */}
           <button
-            onClick={user ? handleQuickPitch : () => setShowPitchModal(true)}
+            onClick={handleAction}
             disabled={isOutOfStock}
             className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-2 ${
               isOutOfStock
                 ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                : 'bg-rose-gold hover:bg-rose-gold/80 text-black hover:shadow-lg hover:shadow-rose-gold/25 transform hover:-translate-y-0.5'
-            }`}
+                : saree.priceType === 'fixed'
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-rose-gold hover:bg-rose-gold/80 text-black'
+            } hover:shadow-lg hover:shadow-current/25 transform hover:-translate-y-0.5`}
           >
-            <MessageCircle className="w-4 h-4" />
-            <span>{user ? 'Add Pitch' : 'Add a Pitch'}</span>
+            {saree.priceType === 'fixed' ? (
+              <>
+                <SendHorizonal className="w-4 h-4" />
+                <span>Buy Now</span>
+              </>
+            ) : (
+              <>
+                <MessageCircle className="w-4 h-4" />
+                <span>{user ? 'Add Pitch' : 'Request Price'}</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -130,6 +159,13 @@ export default function SareeCard({ saree }: SareeCardProps) {
         saree={saree}
         isOpen={showPitchModal}
         onClose={() => setShowPitchModal(false)}
+      />
+
+      {/* Message Modal */}
+      <MessageModal 
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        saree={saree}
       />
     </>
   );

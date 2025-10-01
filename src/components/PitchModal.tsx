@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, MessageCircle, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import DirectMessage from './DirectMessage';
 import type { Saree } from '../contexts/DataContext';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface PitchModalProps {
   saree: Saree;
@@ -12,30 +13,27 @@ interface PitchModalProps {
 
 export default function PitchModal({ saree, isOpen, onClose }: PitchModalProps) {
   const { user } = useAuth();
-  const [showDirectMessage, setShowDirectMessage] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     message: '',
+    proposedPrice: '',
     rememberMe: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setShowDirectMessage(false);
-    }
-  }, [isOpen]);
-
-  const handleMessageSent = () => {
-    setShowDirectMessage(false);
-    onClose();
-  };
-
   const handleClose = () => {
     setSubmitted(false);
-    setFormData({ name: '', email: '', message: '', rememberMe: false });
+    setFormData({ 
+      name: '', 
+      email: '', 
+      phone: '',
+      message: '', 
+      proposedPrice: '',
+      rememberMe: false 
+    });
     onClose();
   };
 
@@ -53,10 +51,33 @@ export default function PitchModal({ saree, isOpen, onClose }: PitchModalProps) 
         localStorage.removeItem('zarigaas_user_email');
       }
 
-      // TODO: Send pitch data to backend
-      // For now, simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Send pitch to Firebase
+      const pitchesRef = collection(db, 'pitches');
+      const timestamp = serverTimestamp();
       
+      // Format the data according to the Firestore schema
+      const pitchData: Record<string, any> = {
+        sareeId: saree.id,
+        userId: user?.uid || '',
+        pitch: formData.message || '',  // Main pitch content
+        message: formData.message || '', // Keep same as pitch for compatibility
+        email: formData.email,
+        name: formData.name,
+        phone: formData.phone || '',
+        sareeName: saree.name,
+        status: 'pending',
+        createdAt: timestamp,
+        updatedAt: timestamp
+      };
+
+      // Add optional fields only if they have values
+      const proposedPrice = formData.proposedPrice ? parseFloat(formData.proposedPrice) : null;
+      if (proposedPrice !== null && !isNaN(proposedPrice)) {
+        pitchData.proposed_price = proposedPrice;
+      }
+
+      console.log('Adding pitch to Firebase:', pitchData);
+      await addDoc(pitchesRef, pitchData);
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting pitch:', error);
@@ -125,7 +146,7 @@ export default function PitchModal({ saree, isOpen, onClose }: PitchModalProps) 
               {/* Saree Info */}
               <div className="flex items-center space-x-4 mb-6 p-4 bg-gray-800/50 rounded-lg">
                 <img
-                  src={saree.image_url}
+                  src={saree.imageUrl}
                   alt={saree.name}
                   className="w-16 h-20 object-cover rounded-md"
                   onError={(e) => {
@@ -136,7 +157,7 @@ export default function PitchModal({ saree, isOpen, onClose }: PitchModalProps) 
                 <div>
                   <h3 className="font-medium text-white">{saree.name}</h3>
                   <p className="text-rose-gold text-sm">
-                    {saree.price_type === 'fixed' ? `₹${saree.price?.toLocaleString()}` : 'Rate on Request'}
+                    {saree.priceType === 'fixed' ? `₹${saree.price?.toLocaleString()}` : 'Rate on Request'}
                   </p>
                   <p className="text-gray-400 text-xs">{saree.pitch_count} pitches so far</p>
                 </div>
@@ -171,6 +192,20 @@ export default function PitchModal({ saree, isOpen, onClose }: PitchModalProps) 
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-rose-gold transition-colors duration-300"
                     placeholder="Enter your email address"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-rose-gold transition-colors duration-300"
+                    placeholder="Enter your phone number"
                   />
                 </div>
 

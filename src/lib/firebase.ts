@@ -1,5 +1,10 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  connectFirestoreEmulator,
+  initializeFirestore,
+  CACHE_SIZE_UNLIMITED
+} from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 
@@ -16,8 +21,20 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize services
-const db = getFirestore(app);
+// Initialize Firestore with persistence settings
+const db = (() => {
+  try {
+    return initializeFirestore(app, {
+      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+      experimentalForceLongPolling: true,
+    });
+  } catch (e) {
+    // If Firestore is already initialized, get the existing instance
+    return getFirestore(app);
+  }
+})();
+
+// Initialize other services
 const auth = getAuth(app);
 const storage = getStorage(app);
 

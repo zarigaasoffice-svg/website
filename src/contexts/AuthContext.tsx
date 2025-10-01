@@ -38,13 +38,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<Role | null>(null);
 
-  // Function to fetch user role
-  const fetchUserRole = async (uid: string) => {
+  // Function to fetch and update user role
+  const updateUserRole = async (uid: string) => {
+    console.log('Fetching user role for:', uid);
     const userRef = doc(db, "users", uid);
     const snap = await getDoc(userRef);
     if (snap.exists()) {
-      setUserRole(snap.data()?.role || 'user');
+      const role = snap.data()?.role || 'user';
+      console.log('User role from DB:', role);
+      setUserRole(role);
+      return role;
     }
+    console.log('No user document found, defaulting to user role');
+    return 'user';
   };
 
   // Firestore sync function
@@ -86,11 +92,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(firebaseUser);
       
       if (firebaseUser) {
-        // Fetch user role when auth state changes
-        const userRef = doc(db, "users", firebaseUser.uid);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          setUserRole(snap.data()?.role || 'user');
+        try {
+          // Fetch user role when auth state changes
+          const userRef = doc(db, "users", firebaseUser.uid);
+          const snap = await getDoc(userRef);
+          
+          if (snap.exists()) {
+            const role = snap.data()?.role || 'user';
+            setUserRole(role);
+            console.log('User role:', role); // Debug log
+          } else {
+            // Create new user document if it doesn't exist
+            await setDoc(userRef, {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName || "",
+              role: "user",
+              createdAt: serverTimestamp(),
+              lastLoginAt: serverTimestamp()
+            });
+            setUserRole("user");
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+          setUserRole("user");
         }
       } else {
         setUserRole(null);
@@ -102,15 +127,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Role check utility functions
-  const isAdmin = () => userRole === "admin";
-  const isOwner = () => userRole === "owner";
+  // Role check computations
+  const isAdmin = userRole === "admin" || userRole === "owner";
+  const isOwner = userRole === "owner";
+
+  console.log('Auth state computed:', { userRole, isAdmin, isOwner });
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // After successful sign in, check and update user role
+      const userRef = doc(db, 'users', userCredential.user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        // Create user document if it doesn't exist
+        await setDoc(userRef, {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          role: 'user',
+          createdAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp()
+        });
+        setUserRole('user');
+      } else {
+        const role = userDoc.data()?.role || 'user';
+        setUserRole(role);
+        console.log('User signed in with role:', role); // Debug log
+      }
+      
       return { error: null };
     } catch (error: any) {
+      console.error('Sign in error:', error);
       return { error };
     }
   };
@@ -149,7 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     loading,
     userRole,
-    isAdmin: userRole === 'admin',
+    isAdmin: userRole === 'admin' || userRole === 'owner',
     isOwner: userRole === 'owner',
     signIn,
     signUp,

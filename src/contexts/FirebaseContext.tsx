@@ -11,7 +11,7 @@ import {
   orderBy,
   getDocs
 } from 'firebase/firestore';
-import { db } from '../firebase-config';
+import { db } from '../lib/firebase';
 
 interface FirebaseContextType {
   // Saree data operations

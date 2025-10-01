@@ -1,0 +1,2923 @@
+/**import React, { useState, useEffect } from 'react';import React, { useState, useEffect } from 'react';import React, { useState, useEffect } from 'react';import React, { useState, useEffect } from 'react';import React, { useState, useEffect } from 'react';import React, { useState, useEffect } from 'react';import React, { useState, useEffect, useCallback } from 'react';
+
+ * AdminDashboard.tsx
+
+ * Main admin interface component for managing products, messages, and pitchesimport { motion, AnimatePresence } from 'framer-motion';
+
+ */
+
+import { Package, MessageCircle, Lightbulb, Menu, Bell, X, Plus, Search } from 'lucide-react';import {
+
+import React, { useState, useEffect } from 'react';
+
+import { motion, AnimatePresence } from 'framer-motion';import { toast } from 'react-hot-toast';
+
+import {
+
+  Package,import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';  Package,import { motion, AnimatePresence } from 'framer-motion';
+
+  MessageCircle,
+
+  Lightbulb,import { db } from '../lib/firebase';
+
+  Menu,
+
+  Bell,import { LoadingSpinner } from '../components/ui/loading';  MessageCircle,
+
+  X,
+
+  Plus,import type { Message, Saree, Pitch, CreateSareeInput } from '../types/models';
+
+  Search
+
+} from 'lucide-react';import { MessageList } from '../components/MessageList';  Lightbulb,import {import { motion, AnimatePresence } from 'framer-motion';
+
+import { toast } from 'react-hot-toast';
+
+import {import { ProductGrid } from '../components/ProductGrid';
+
+  collection,
+
+  query,import { ProductForm } from '../components/ProductForm';  Menu,
+
+  orderBy,
+
+  onSnapshot,import { PitchesTab } from '../components/PitchesTab';
+
+  deleteDoc,
+
+  doc,  Bell,  Package,
+
+  updateDoc,
+
+  addDoc,const AdminDashboard: React.FC = () => {
+
+  serverTimestamp
+
+} from 'firebase/firestore';  const [sidebarOpen, setSidebarOpen] = useState(false);  X,
+
+import { db } from '../lib/firebase';
+
+import { LoadingSpinner } from '../components/ui/loading';  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'pitches'>('products');
+
+import { Message, Saree, Pitch, CreateSareeInput } from '../types/models';
+
+import { MessageList } from '../components/MessageList';  const [loading, setLoading] = useState(true);  Plus,  MessageCircle,import {import { motion, AnimatePresence } from 'framer-motion';
+
+import { ProductGrid } from '../components/ProductGrid';
+
+import { ProductForm } from '../components/ProductForm';  const [searchTerm, setSearchTerm] = useState('');
+
+import { PitchesTab } from '../components/PitchesTab';
+
+  const [products, setProducts] = useState<Saree[]>([]);  Search
+
+const AdminDashboard: React.FC = () => {
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);  const [messages, setMessages] = useState<Message[]>([]);
+
+  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'pitches'>('products');
+
+  const [loading, setLoading] = useState(true);  const [pitches, setPitches] = useState<Pitch[]>([]);} from 'lucide-react';  Lightbulb,
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const [products, setProducts] = useState<Saree[]>([]);  const [newProductForm, setNewProductForm] = useState(false);
+
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const [pitches, setPitches] = useState<Pitch[]>([]);  const [editingProduct, setEditingProduct] = useState<Saree | null>(null);import { motion, AnimatePresence } from 'framer-motion';
+
+  const [newProductForm, setNewProductForm] = useState(false);
+
+  const [editingProduct, setEditingProduct] = useState<Saree | null>(null);
+
+
+
+  useEffect(() => {  useEffect(() => {import { toast } from 'react-hot-toast';  Menu,  Package,
+
+    const unsubscribers: (() => void)[] = [];
+
+    setLoading(true);    const unsubscribers: (() => void)[] = [];
+
+
+
+    try {    setLoading(true);import {
+
+      // Fetch products
+
+      const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+
+      unsubscribers.push(
+
+        onSnapshot(productsQuery, (snapshot) => {    try {  collection,  Bell,
+
+          const productsData = snapshot.docs.map((doc) => ({
+
+            id: doc.id,      const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+
+            ...doc.data(),
+
+          })) as Saree[];      unsubscribers.push(  query,
+
+          setProducts(productsData);
+
+        })        onSnapshot(productsQuery, (snapshot) => {
+
+      );
+
+          const productsData = snapshot.docs.map((doc) => ({  orderBy,  X,  MessageCircle,import {import { motion, AnimatePresence } from 'framer-motion';import { motion, AnimatePresence } from 'framer-motion';
+
+      // Fetch messages
+
+      const messagesQuery = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));            id: doc.id,
+
+      unsubscribers.push(
+
+        onSnapshot(messagesQuery, (snapshot) => {            ...doc.data(),  onSnapshot,
+
+          const messagesData = snapshot.docs.map((doc) => ({
+
+            id: doc.id,          })) as Saree[];
+
+            ...doc.data(),
+
+          })) as Message[];          setProducts(productsData);  deleteDoc,  Plus,
+
+          setMessages(messagesData);
+
+        })        })
+
+      );
+
+      );  doc,
+
+      // Fetch pitches
+
+      const pitchesQuery = query(collection(db, 'pitches'), orderBy('createdAt', 'desc'));
+
+      unsubscribers.push(
+
+        onSnapshot(pitchesQuery, (snapshot) => {      const messagesQuery = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));  updateDoc,  Search  Lightbulb,
+
+          const pitchesData = snapshot.docs.map((doc) => ({
+
+            id: doc.id,      unsubscribers.push(
+
+            ...doc.data(),
+
+          })) as Pitch[];        onSnapshot(messagesQuery, (snapshot) => {  addDoc,
+
+          setPitches(pitchesData);
+
+        })          const messagesData = snapshot.docs.map((doc) => ({
+
+      );
+
+    } catch (error) {            id: doc.id,  serverTimestamp} from 'lucide-react';
+
+      console.error('Error setting up real-time listeners:', error);
+
+      toast.error('Failed to set up real-time updates');            ...doc.data(),
+
+    }
+
+          })) as Message[];} from 'firebase/firestore';
+
+    setLoading(false);
+
+    return () => unsubscribers.forEach(unsubscribe => unsubscribe());          setMessages(messagesData);
+
+  }, []);
+
+        })import { db } from '../lib/firebase';import { toast } from 'react-hot-toast';  Menu,  Package,
+
+  useEffect(() => {
+
+    const handleResize = () => setSidebarOpen(window.innerWidth >= 768);      );
+
+    window.addEventListener('resize', handleResize);
+
+    handleResize();import { LoadingSpinner } from '../components/ui/loading';
+
+    return () => window.removeEventListener('resize', handleResize);
+
+  }, []);      const pitchesQuery = query(collection(db, 'pitches'), orderBy('createdAt', 'desc'));
+
+
+
+  const filteredProducts = searchTerm.trim() === ''      unsubscribers.push(import type { Message, Saree, Pitch, CreateSareeInput } from '../types/models';import {
+
+    ? products
+
+    : products.filter((product) =>        onSnapshot(pitchesQuery, (snapshot) => {
+
+        [
+
+          product.name?.toLowerCase() ?? '',          const pitchesData = snapshot.docs.map((doc) => ({import { MessageList } from '../components/MessageList';
+
+          String(product.price)?.toLowerCase() ?? '',
+
+          product.category?.toLowerCase() ?? '',            id: doc.id,
+
+        ].some((field) => field.includes(searchTerm.toLowerCase()))
+
+      );            ...doc.data(),import { ProductGrid } from '../components/ProductGrid';  collection,  Bell,
+
+
+
+  const handleNewProduct = async (productData: CreateSareeInput) => {          })) as Pitch[];
+
+    try {
+
+      await addDoc(collection(db, 'products'), {          setPitches(pitchesData);import { ProductForm } from '../components/ProductForm';
+
+        ...productData,
+
+        createdAt: serverTimestamp(),        })
+
+        updatedAt: serverTimestamp(),
+
+      });      );import { PitchesTab } from '../components/PitchesTab';  query,
+
+      setNewProductForm(false);
+
+      toast.success('Product added successfully');    } catch (error) {
+
+    } catch (error) {
+
+      console.error('Error adding product:', error);      console.error('Error setting up real-time listeners:', error);
+
+      toast.error('Failed to add product');
+
+    }      toast.error('Failed to set up real-time updates');
+
+  };
+
+    }const AdminDashboard: React.FC = () => {  orderBy,  X,  MessageCircle,import {import {
+
+  const handleProductUpdate = async (productId: string, data: Partial<Saree>) => {
+
+    try {
+
+      await updateDoc(doc(db, 'products', productId), {
+
+        ...data,    setLoading(false);  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+        updatedAt: serverTimestamp(),
+
+      });    return () => unsubscribers.forEach(unsubscribe => unsubscribe());
+
+      setEditingProduct(null);
+
+      toast.success('Product updated successfully');  }, []);  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'pitches'>('products');  onSnapshot,
+
+    } catch (error) {
+
+      console.error('Error updating product:', error);
+
+      toast.error('Failed to update product');
+
+    }  useEffect(() => {  const [loading, setLoading] = useState(true);
+
+  };
+
+    const handleResize = () => setSidebarOpen(window.innerWidth >= 768);
+
+  const handleProductDelete = async (productId: string) => {
+
+    if (!window.confirm('Are you sure you want to delete this product?')) return;    window.addEventListener('resize', handleResize);  const [searchTerm, setSearchTerm] = useState('');  deleteDoc,  Plus,
+
+
+
+    try {    handleResize();
+
+      await deleteDoc(doc(db, 'products', productId));
+
+      toast.success('Product deleted successfully');    return () => window.removeEventListener('resize', handleResize);  const [products, setProducts] = useState<Saree[]>([]);
+
+    } catch (error) {
+
+      console.error('Error deleting product:', error);  }, []);
+
+      toast.error('Failed to delete product');
+
+    }  const [messages, setMessages] = useState<Message[]>([]);  doc,
+
+  };
+
+  const filteredProducts = searchTerm.trim() === ''
+
+  const handleMarkAsRead = async (messageId: string) => {
+
+    try {    ? products  const [pitches, setPitches] = useState<Pitch[]>([]);
+
+      await updateDoc(doc(db, 'messages', messageId), {
+
+        isRead: true,    : products.filter((product) =>
+
+        readAt: serverTimestamp(),
+
+      });        [  const [newProductForm, setNewProductForm] = useState(false);  updateDoc,  Search  Lightbulb,
+
+      toast.success('Message marked as read');
+
+    } catch (error) {          product.name?.toLowerCase() ?? '',
+
+      console.error('Error marking message as read:', error);
+
+      toast.error('Failed to mark message as read');          String(product.price)?.toLowerCase() ?? '',  const [editingProduct, setEditingProduct] = useState<Saree | null>(null);
+
+    }
+
+  };          product.category?.toLowerCase() ?? '',
+
+
+
+  const handlePitchStatusUpdate = async (pitchId: string, status: 'approved' | 'rejected') => {        ].some((field) => field.includes(searchTerm.toLowerCase()))  addDoc,
+
+    try {
+
+      await updateDoc(doc(db, 'pitches', pitchId), {      );
+
+        status,
+
+        updatedAt: serverTimestamp(),  useEffect(() => {
+
+      });
+
+      toast.success(`Pitch ${status} successfully`);  const handleNewProduct = async (productData: CreateSareeInput) => {
+
+    } catch (error) {
+
+      console.error('Error updating pitch status:', error);    try {    const unsubscribers: (() => void)[] = [];  serverTimestamp} from 'lucide-react';
+
+      toast.error('Failed to update pitch status');
+
+    }      await addDoc(collection(db, 'products'), {
+
+  };
+
+        ...productData,    setLoading(true);
+
+  const handlePitchReply = async (pitchId: string, reply: string) => {
+
+    try {        createdAt: serverTimestamp(),
+
+      await updateDoc(doc(db, 'pitches', pitchId), {
+
+        reply,        updatedAt: serverTimestamp(),} from 'firebase/firestore';
+
+        repliedAt: serverTimestamp(),
+
+      });      });
+
+      toast.success('Reply sent successfully');
+
+    } catch (error) {      setNewProductForm(false);    try {
+
+      console.error('Error sending reply:', error);
+
+      toast.error('Failed to send reply');      toast.success('Product added successfully');
+
+    }
+
+  };    } catch (error) {      const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));import { db } from '../lib/firebase';import { toast } from 'react-hot-toast';  Menu,  Package,  Package,
+
+
+
+  return (      console.error('Error adding product:', error);
+
+    <div className="flex h-screen bg-gray-100">
+
+      <aside      toast.error('Failed to add product');      unsubscribers.push(
+
+        className={`
+
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}    }
+
+          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform 
+
+          transition-transform duration-300 ease-in-out md:relative md:translate-x-0  };        onSnapshot(productsQuery, (snapshot) => {import { LoadingSpinner } from '../components/ui/loading';
+
+        `}
+
+      >
+
+        <div className="flex items-center justify-between p-4 border-b">
+
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>  const handleProductUpdate = async (productId: string, data: Partial<Saree>) => {          const productsData = snapshot.docs.map((doc) => ({
+
+          <button
+
+            onClick={() => setSidebarOpen(false)}    try {
+
+            className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+          >      await updateDoc(doc(db, 'products', productId), {            id: doc.id,import type { Message, Saree, Pitch, CreateSareeInput } from '../types/models';import {
+
+            <X className="w-5 h-5" />
+
+          </button>        ...data,
+
+        </div>
+
+        updatedAt: serverTimestamp(),            ...doc.data(),
+
+        <nav className="p-4 space-y-2">
+
+          <button      });
+
+            onClick={() => setActiveTab('products')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${      setEditingProduct(null);          })) as Saree[];import { MessageList } from '../components/MessageList';
+
+              activeTab === 'products' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}      toast.success('Product updated successfully');
+
+          >
+
+            <Package className="w-5 h-5" />    } catch (error) {          setProducts(productsData);
+
+            <span>Products</span>
+
+          </button>      console.error('Error updating product:', error);
+
+
+
+          <button      toast.error('Failed to update product');        })import { ProductGrid } from '../components/ProductGrid';  collection,  Bell,
+
+            onClick={() => setActiveTab('messages')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${    }
+
+              activeTab === 'messages' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}  };      );
+
+          >
+
+            <MessageCircle className="w-5 h-5" />
+
+            <span>Messages</span>
+
+          </button>  const handleProductDelete = async (productId: string) => {import { ProductForm } from '../components/ProductForm';
+
+
+
+          <button    if (!window.confirm('Are you sure you want to delete this product?')) return;
+
+            onClick={() => setActiveTab('pitches')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${      const messagesQuery = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+
+              activeTab === 'pitches' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}    try {
+
+          >
+
+            <Lightbulb className="w-5 h-5" />      await deleteDoc(doc(db, 'products', productId));      unsubscribers.push(import { PitchesTab } from '../components/PitchesTab';  query,
+
+            <span>Pitches</span>
+
+          </button>      toast.success('Product deleted successfully');
+
+        </nav>
+
+      </aside>    } catch (error) {        onSnapshot(messagesQuery, (snapshot) => {
+
+
+
+      <main className="flex-1 overflow-auto">      console.error('Error deleting product:', error);
+
+        <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+
+          <div className="flex items-center justify-between p-4">      toast.error('Failed to delete product');          const messagesData = snapshot.docs.map((doc) => ({
+
+            <button
+
+              onClick={() => setSidebarOpen(true)}    }
+
+              className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+            >  };            id: doc.id,
+
+              <Menu className="w-5 h-5" />
+
+            </button>
+
+
+
+            <div className="flex-1 max-w-xl mx-4">  const handleMarkAsRead = async (messageId: string) => {            ...doc.data(),interface AdminDashboardProps {}  orderBy,  X,  MessageCircle,  MessageCircle,
+
+              <div className="relative">
+
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />    try {
+
+                <input
+
+                  type="text"      await updateDoc(doc(db, 'messages', messageId), {          })) as Message[];
+
+                  placeholder="Search..."
+
+                  value={searchTerm}        isRead: true,
+
+                  onChange={(e) => setSearchTerm(e.target.value)}
+
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"        readAt: serverTimestamp(),          setMessages(messagesData);
+
+                />
+
+              </div>      });
+
+            </div>
+
+      toast.success('Message marked as read');        })
+
+            <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+
+              <Bell className="w-5 h-5" />    } catch (error) {
+
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+
+            </button>      console.error('Error marking message as read:', error);      );const AdminDashboard: React.FC<AdminDashboardProps> = () => {  onSnapshot,
+
+          </div>
+
+        </div>      toast.error('Failed to mark message as read');
+
+
+
+        <div className="p-6">    }
+
+          <AnimatePresence mode="wait">
+
+            {loading ? (  };
+
+              <div className="flex justify-center items-center h-64">
+
+                <LoadingSpinner />      const pitchesQuery = query(collection(db, 'pitches'), orderBy('createdAt', 'desc'));  // State
+
+              </div>
+
+            ) : (  const handlePitchStatusUpdate = async (pitchId: string, status: 'approved' | 'rejected') => {
+
+              <>
+
+                {activeTab === 'products' && (    try {      unsubscribers.push(
+
+                  <motion.div
+
+                    initial={{ opacity: 0, y: 20 }}      await updateDoc(doc(db, 'pitches', pitchId), {
+
+                    animate={{ opacity: 1, y: 0 }}
+
+                    exit={{ opacity: 0, y: -20 }}        status,        onSnapshot(pitchesQuery, (snapshot) => {  const [sidebarOpen, setSidebarOpen] = useState(false);  deleteDoc,  Plus,
+
+                    className="space-y-6"
+
+                  >        updatedAt: serverTimestamp(),
+
+                    <div className="flex justify-between items-center">
+
+                      <h2 className="text-2xl font-semibold">Products</h2>      });          const pitchesData = snapshot.docs.map((doc) => ({
+
+                      <button
+
+                        onClick={() => setNewProductForm(true)}      toast.success(`Pitch ${status} successfully`);
+
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+
+                      >    } catch (error) {            id: doc.id,  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'pitches'>('products');
+
+                        <Plus className="w-5 h-5" />
+
+                        <span>Add Product</span>      console.error('Error updating pitch status:', error);
+
+                      </button>
+
+                    </div>      toast.error('Failed to update pitch status');            ...doc.data(),
+
+
+
+                    {newProductForm ? (    }
+
+                      <ProductForm
+
+                        onSubmit={handleNewProduct}  };          })) as Pitch[];  const [loading, setLoading] = useState(true);  doc,
+
+                        onCancel={() => setNewProductForm(false)}
+
+                      />
+
+                    ) : (
+
+                      <ProductGrid  const handlePitchReply = async (pitchId: string, reply: string) => {          setPitches(pitchesData);
+
+                        products={filteredProducts}
+
+                        editingProduct={editingProduct}    try {
+
+                        onEdit={setEditingProduct}
+
+                        onDelete={handleProductDelete}      await updateDoc(doc(db, 'pitches', pitchId), {        })  const [searchTerm, setSearchTerm] = useState('');
+
+                        onUpdate={handleProductUpdate}
+
+                        onCancelEdit={() => setEditingProduct(null)}        reply,
+
+                      />
+
+                    )}        repliedAt: serverTimestamp(),      );
+
+                  </motion.div>
+
+                )}      });
+
+
+
+                {activeTab === 'messages' && (      toast.success('Reply sent successfully');    } catch (error) {  const [products, setProducts] = useState<Saree[]>([]);  updateDoc,  Search  Lightbulb,  Lightbulb,
+
+                  <motion.div
+
+                    initial={{ opacity: 0, y: 20 }}    } catch (error) {
+
+                    animate={{ opacity: 1, y: 0 }}
+
+                    exit={{ opacity: 0, y: -20 }}      console.error('Error sending reply:', error);      console.error('Error setting up real-time listeners:', error);
+
+                    className="space-y-6"
+
+                  >      toast.error('Failed to send reply');
+
+                    <div className="flex justify-between items-center">
+
+                      <h2 className="text-2xl font-semibold">Messages</h2>    }      toast.error('Failed to set up real-time updates');  const [messages, setMessages] = useState<Message[]>([]);
+
+                      <div className="text-sm text-gray-500">
+
+                        {messages.length} messages • {messages.filter((m) => !m.isRead).length} unread  };
+
+                      </div>
+
+                    </div>    }
+
+
+
+                    <MessageList  return (
+
+                      messages={messages}
+
+                      onMarkAsRead={handleMarkAsRead}    <div className="flex h-screen bg-gray-100">  const [pitches, setPitches] = useState<Pitch[]>([]);  addDoc,
+
+                      onDelete={handleProductDelete}
+
+                      isLoading={loading}      <aside
+
+                    />
+
+                  </motion.div>        className={`    setLoading(false);
+
+                )}
+
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+
+                {activeTab === 'pitches' && (
+
+                  <motion.div          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform     return () => unsubscribers.forEach(unsubscribe => unsubscribe());  const [newProductForm, setNewProductForm] = useState(false);
+
+                    initial={{ opacity: 0, y: 20 }}
+
+                    animate={{ opacity: 1, y: 0 }}          transition-transform duration-300 ease-in-out md:relative md:translate-x-0
+
+                    exit={{ opacity: 0, y: -20 }}
+
+                    className="space-y-6"        `}  }, []);
+
+                  >
+
+                    <PitchesTab      >
+
+                      pitches={pitches}
+
+                      onStatusUpdate={handlePitchStatusUpdate}        <div className="flex items-center justify-between p-4 border-b">  const [editingProduct, setEditingProduct] = useState<Saree | null>(null);  serverTimestamp} from 'lucide-react';
+
+                      onReply={handlePitchReply}
+
+                    />          <h1 className="text-xl font-bold">Admin Dashboard</h1>
+
+                  </motion.div>
+
+                )}          <button  useEffect(() => {
+
+              </>
+
+            )}            onClick={() => setSidebarOpen(false)}
+
+          </AnimatePresence>
+
+        </div>            className="p-2 rounded-lg hover:bg-gray-100 md:hidden"    const handleResize = () => setSidebarOpen(window.innerWidth >= 768);
+
+      </main>
+
+    </div>          >
+
+  );
+
+};            <X className="w-5 h-5" />    window.addEventListener('resize', handleResize);
+
+
+
+export default AdminDashboard;          </button>
+
+        </div>    handleResize();  // Data fetching} from 'firebase/firestore';
+
+
+
+        <nav className="p-4 space-y-2">    return () => window.removeEventListener('resize', handleResize);
+
+          <button
+
+            onClick={() => setActiveTab('products')}  }, []);  useEffect(() => {
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+
+              activeTab === 'products' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}
+
+          >  const filteredProducts = searchTerm.trim() === ''    const unsubscribers: (() => void)[] = [];import { db } from '../lib/firebase';import { toast } from 'react-hot-toast';  Menu,  Menu,
+
+            <Package className="w-5 h-5" />
+
+            <span>Products</span>    ? products
+
+          </button>
+
+    : products.filter((product) =>    setLoading(true);
+
+          <button
+
+            onClick={() => setActiveTab('messages')}        [
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+
+              activeTab === 'messages' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'          product.name?.toLowerCase() ?? '',import { LoadingSpinner } from '../components/ui/loading';
+
+            }`}
+
+          >          String(product.price)?.toLowerCase() ?? '',
+
+            <MessageCircle className="w-5 h-5" />
+
+            <span>Messages</span>          product.category?.toLowerCase() ?? '',    try {
+
+          </button>
+
+        ].some((field) => field.includes(searchTerm.toLowerCase()))
+
+          <button
+
+            onClick={() => setActiveTab('pitches')}      );      // Fetch productsimport type { Message, Saree, Pitch, CreateSareeInput } from '../types/models';import {
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+
+              activeTab === 'pitches' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}
+
+          >  const handleNewProduct = async (productData: CreateSareeInput) => {      const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+
+            <Lightbulb className="w-5 h-5" />
+
+            <span>Pitches</span>    try {
+
+          </button>
+
+        </nav>      await addDoc(collection(db, 'products'), {      unsubscribers.push(import { MessageList } from '../components/MessageList';
+
+      </aside>
+
+        ...productData,
+
+      <main className="flex-1 overflow-auto">
+
+        <div className="sticky top-0 z-40 bg-white border-b shadow-sm">        createdAt: serverTimestamp(),        onSnapshot(productsQuery, (snapshot) => {
+
+          <div className="flex items-center justify-between p-4">
+
+            <button        updatedAt: serverTimestamp(),
+
+              onClick={() => setSidebarOpen(true)}
+
+              className="p-2 rounded-lg hover:bg-gray-100 md:hidden"      });          const productsData = snapshot.docs.map((doc) => ({import { ProductGrid } from '../components/ProductGrid';  collection,  Bell,  Bell,
+
+            >
+
+              <Menu className="w-5 h-5" />      setNewProductForm(false);
+
+            </button>
+
+      toast.success('Product added successfully');            id: doc.id,
+
+            <div className="flex-1 max-w-xl mx-4">
+
+              <div className="relative">    } catch (error) {
+
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+
+                <input      console.error('Error adding product:', error);            ...doc.data(),import { ProductForm } from '../components/ProductForm';
+
+                  type="text"
+
+                  placeholder="Search..."      toast.error('Failed to add product');
+
+                  value={searchTerm}
+
+                  onChange={(e) => setSearchTerm(e.target.value)}    }          })) as Saree[];
+
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+                />  };
+
+              </div>
+
+            </div>          setProducts(productsData);import { PitchesTab } from '../components/PitchesTab';  query,
+
+
+
+            <button className="p-2 rounded-lg hover:bg-gray-100 relative">  const handleProductUpdate = async (productId: string, data: Partial<Saree>) => {
+
+              <Bell className="w-5 h-5" />
+
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>    try {        })
+
+            </button>
+
+          </div>      await updateDoc(doc(db, 'products', productId), {
+
+        </div>
+
+        ...data,      );
+
+        <div className="p-6">
+
+          <AnimatePresence mode="wait">        updatedAt: serverTimestamp(),
+
+            {loading ? (
+
+              <div className="flex justify-center items-center h-64">      });
+
+                <LoadingSpinner />
+
+              </div>      setEditingProduct(null);
+
+            ) : (
+
+              <>      toast.success('Product updated successfully');      // Fetch messagesinterface AdminDashboardProps {}  orderBy,  X,  X,
+
+                {activeTab === 'products' && (
+
+                  <motion.div    } catch (error) {
+
+                    initial={{ opacity: 0, y: 20 }}
+
+                    animate={{ opacity: 1, y: 0 }}      console.error('Error updating product:', error);      const messagesQuery = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+
+                    exit={{ opacity: 0, y: -20 }}
+
+                    className="space-y-6"      toast.error('Failed to update product');
+
+                  >
+
+                    <div className="flex justify-between items-center">    }      unsubscribers.push(
+
+                      <h2 className="text-2xl font-semibold">Products</h2>
+
+                      <button  };
+
+                        onClick={() => setNewProductForm(true)}
+
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"        onSnapshot(messagesQuery, (snapshot) => {
+
+                      >
+
+                        <Plus className="w-5 h-5" />  const handleProductDelete = async (productId: string) => {
+
+                        <span>Add Product</span>
+
+                      </button>    if (!window.confirm('Are you sure you want to delete this product?')) return;          const messagesData = snapshot.docs.map((doc) => ({const AdminDashboard: React.FC<AdminDashboardProps> = () => {  onSnapshot,
+
+                    </div>
+
+
+
+                    {newProductForm ? (
+
+                      <ProductForm    try {            id: doc.id,
+
+                        onSubmit={handleNewProduct}
+
+                        onCancel={() => setNewProductForm(false)}      await deleteDoc(doc(db, 'products', productId));
+
+                      />
+
+                    ) : (      toast.success('Product deleted successfully');            ...doc.data(),  // State
+
+                      <ProductGrid
+
+                        products={filteredProducts}    } catch (error) {
+
+                        editingProduct={editingProduct}
+
+                        onEdit={setEditingProduct}      console.error('Error deleting product:', error);          })) as Message[];
+
+                        onDelete={handleProductDelete}
+
+                        onUpdate={handleProductUpdate}      toast.error('Failed to delete product');
+
+                        onCancelEdit={() => setEditingProduct(null)}
+
+                      />    }          setMessages(messagesData);  const [sidebarOpen, setSidebarOpen] = useState(false);  deleteDoc,  Plus,  Plus,
+
+                    )}
+
+                  </motion.div>  };
+
+                )}
+
+        })
+
+                {activeTab === 'messages' && (
+
+                  <motion.div  const handleMarkAsRead = async (messageId: string) => {
+
+                    initial={{ opacity: 0, y: 20 }}
+
+                    animate={{ opacity: 1, y: 0 }}    try {      );  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'pitches'>('products');
+
+                    exit={{ opacity: 0, y: -20 }}
+
+                    className="space-y-6"      await updateDoc(doc(db, 'messages', messageId), {
+
+                  >
+
+                    <div className="flex justify-between items-center">        isRead: true,
+
+                      <h2 className="text-2xl font-semibold">Messages</h2>
+
+                      <div className="text-sm text-gray-500">        readAt: serverTimestamp(),
+
+                        {messages.length} messages • {messages.filter((m) => !m.isRead).length} unread
+
+                      </div>      });      // Fetch pitches  const [loading, setLoading] = useState(true);  doc,
+
+                    </div>
+
+      toast.success('Message marked as read');
+
+                    <MessageList
+
+                      messages={messages}    } catch (error) {      const pitchesQuery = query(collection(db, 'pitches'), orderBy('createdAt', 'desc'));
+
+                      onMarkAsRead={handleMarkAsRead}
+
+                      onDelete={handleProductDelete}      console.error('Error marking message as read:', error);
+
+                      isLoading={loading}
+
+                    />      toast.error('Failed to mark message as read');      unsubscribers.push(  const [searchTerm, setSearchTerm] = useState('');
+
+                  </motion.div>
+
+                )}    }
+
+
+
+                {activeTab === 'pitches' && (  };        onSnapshot(pitchesQuery, (snapshot) => {
+
+                  <motion.div
+
+                    initial={{ opacity: 0, y: 20 }}
+
+                    animate={{ opacity: 1, y: 0 }}
+
+                    exit={{ opacity: 0, y: -20 }}  const handlePitchStatusUpdate = async (pitchId: string, status: 'approved' | 'rejected') => {          const pitchesData = snapshot.docs.map((doc) => ({  const [products, setProducts] = useState<Saree[]>([]);  updateDoc,  Search  Search
+
+                    className="space-y-6"
+
+                  >    try {
+
+                    <PitchesTab
+
+                      pitches={pitches}      await updateDoc(doc(db, 'pitches', pitchId), {            id: doc.id,
+
+                      onStatusUpdate={handlePitchStatusUpdate}
+
+                      onReply={handlePitchReply}        status,
+
+                    />
+
+                  </motion.div>        updatedAt: serverTimestamp(),            ...doc.data(),  const [messages, setMessages] = useState<Message[]>([]);
+
+                )}
+
+              </>      });
+
+            )}
+
+          </AnimatePresence>      toast.success(`Pitch ${status} successfully`);          })) as Pitch[];
+
+        </div>
+
+      </main>    } catch (error) {
+
+    </div>
+
+  );      console.error('Error updating pitch status:', error);          setPitches(pitchesData);  const [pitches, setPitches] = useState<Pitch[]>([]);  addDoc,
+
+};
+
+      toast.error('Failed to update pitch status');
+
+export default AdminDashboard;
+    }        })
+
+  };
+
+      );  const [newProductForm, setNewProductForm] = useState(false);
+
+  const handlePitchReply = async (pitchId: string, reply: string) => {
+
+    try {    } catch (error) {
+
+      await updateDoc(doc(db, 'pitches', pitchId), {
+
+        reply,      console.error('Error setting up real-time listeners:', error);  const [editingProduct, setEditingProduct] = useState<Saree | null>(null);  serverTimestamp} from 'lucide-react';} from 'lucide-react';
+
+        repliedAt: serverTimestamp(),
+
+      });      toast.error('Failed to set up real-time updates');
+
+      toast.success('Reply sent successfully');
+
+    } catch (error) {    }
+
+      console.error('Error sending reply:', error);
+
+      toast.error('Failed to send reply');
+
+    }
+
+  };    setLoading(false);  // Data fetching} from 'firebase/firestore';
+
+
+
+  return (
+
+    <div className="flex h-screen bg-gray-100">
+
+      <aside    return () => {  useEffect(() => {
+
+        className={`
+
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}      unsubscribers.forEach((unsubscribe) => unsubscribe());
+
+          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform 
+
+          transition-transform duration-300 ease-in-out md:relative md:translate-x-0    };    const unsubscribers: (() => void)[] = [];import { db } from '../lib/firebase';import { toast } from 'react-hot-toast';import { toast } from 'react-hot-toast';
+
+        `}
+
+      >  }, []);
+
+        <div className="flex items-center justify-between p-4 border-b">
+
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>    setLoading(true);
+
+          <button
+
+            onClick={() => setSidebarOpen(false)}  // Responsive sidebar
+
+            className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+          >  useEffect(() => {import { LoadingSpinner } from '../components/ui/loading';
+
+            <X className="w-5 h-5" />
+
+          </button>    const handleResize = () => setSidebarOpen(window.innerWidth >= 768);
+
+        </div>
+
+    window.addEventListener('resize', handleResize);    try {
+
+        <nav className="p-4 space-y-2">
+
+          <button    handleResize();
+
+            onClick={() => setActiveTab('products')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${    return () => window.removeEventListener('resize', handleResize);      // Fetch productsimport type { Message, Saree, Pitch, CreateSareeInput } from '../types/models';import {import {
+
+              activeTab === 'products' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}  }, []);
+
+          >
+
+            <Package className="w-5 h-5" />      const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+
+            <span>Products</span>
+
+          </button>  // Filter products based on search term
+
+
+
+          <button  const filteredProducts = searchTerm.trim() === ''      unsubscribers.push(import { MessageList } from '../components/MessageList';
+
+            onClick={() => setActiveTab('messages')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${    ? products
+
+              activeTab === 'messages' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}    : products.filter((product) =>        onSnapshot(productsQuery, (snapshot) => {
+
+          >
+
+            <MessageCircle className="w-5 h-5" />        [
+
+            <span>Messages</span>
+
+          </button>          product.name?.toLowerCase() ?? '',          const productsData = snapshot.docs.map((doc) => ({import { ProductGrid } from '../components/ProductGrid';  collection,  collection,
+
+
+
+          <button          String(product.price)?.toLowerCase() ?? '',
+
+            onClick={() => setActiveTab('pitches')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${          product.category?.toLowerCase() ?? '',            id: doc.id,
+
+              activeTab === 'pitches' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}        ].some((field) => field.includes(searchTerm.toLowerCase()))
+
+          >
+
+            <Lightbulb className="w-5 h-5" />      );            ...doc.data(),import { ProductForm } from '../components/ProductForm';
+
+            <span>Pitches</span>
+
+          </button>
+
+        </nav>
+
+      </aside>  // Handlers          })) as Saree[];
+
+
+
+      <main className="flex-1 overflow-auto">  const handleNewProduct = async (productData: CreateSareeInput) => {
+
+        <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+
+          <div className="flex items-center justify-between p-4">    try {          setProducts(productsData);import { PitchesTab } from '../components/PitchesTab';  query,  query,
+
+            <button
+
+              onClick={() => setSidebarOpen(true)}      await addDoc(collection(db, 'products'), {
+
+              className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+            >        ...productData,        })
+
+              <Menu className="w-5 h-5" />
+
+            </button>        createdAt: serverTimestamp(),
+
+
+
+            <div className="flex-1 max-w-xl mx-4">        updatedAt: serverTimestamp(),      );
+
+              <div className="relative">
+
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />      });
+
+                <input
+
+                  type="text"      setNewProductForm(false);
+
+                  placeholder="Search..."
+
+                  value={searchTerm}      toast.success('Product added successfully');
+
+                  onChange={(e) => setSearchTerm(e.target.value)}
+
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"    } catch (error) {      // Fetch messagesinterface AdminDashboardProps {}  orderBy,  orderBy,
+
+                />
+
+              </div>      console.error('Error adding product:', error);
+
+            </div>
+
+      toast.error('Failed to add product');      const messagesQuery = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+
+            <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+
+              <Bell className="w-5 h-5" />    }
+
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+
+            </button>  };      unsubscribers.push(  onSnapshot,  onSnapshot,
+
+          </div>
+
+        </div>
+
+
+
+        <div className="p-6">  const handleProductUpdate = async (productId: string, data: Partial<Saree>) => {        onSnapshot(messagesQuery, (snapshot) => {
+
+          <AnimatePresence mode="wait">
+
+            {loading ? (    try {
+
+              <div className="flex justify-center items-center h-64">
+
+                <LoadingSpinner />      await updateDoc(doc(db, 'products', productId), {          const messagesData = snapshot.docs.map((doc) => ({  deleteDoc,  deleteDoc,
+
+              </div>
+
+            ) : (        ...data,
+
+              <>
+
+                {activeTab === 'products' && (        updatedAt: serverTimestamp(),            id: doc.id,
+
+                  <motion.div
+
+                    initial={{ opacity: 0, y: 20 }}      });
+
+                    animate={{ opacity: 1, y: 0 }}
+
+                    exit={{ opacity: 0, y: -20 }}      setEditingProduct(null);            ...doc.data(),  doc,  doc,
+
+                    className="space-y-6"
+
+                  >      toast.success('Product updated successfully');
+
+                    <div className="flex justify-between items-center">
+
+                      <h2 className="text-2xl font-semibold">Products</h2>    } catch (error) {          })) as Message[];
+
+                      <button
+
+                        onClick={() => setNewProductForm(true)}      console.error('Error updating product:', error);
+
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+
+                      >      toast.error('Failed to update product');          setMessages(messagesData);  updateDoc,  updateDoc,
+
+                        <Plus className="w-5 h-5" />
+
+                        <span>Add Product</span>    }
+
+                      </button>
+
+                    </div>  };        })
+
+
+
+                    {newProductForm ? (
+
+                      <ProductForm
+
+                        onSubmit={handleNewProduct}  const handleProductDelete = async (productId: string) => {      );  addDoc,  addDoc,
+
+                        onCancel={() => setNewProductForm(false)}
+
+                      />    if (!window.confirm('Are you sure you want to delete this product?')) return;
+
+                    ) : (
+
+                      <ProductGrid
+
+                        products={filteredProducts}
+
+                        editingProduct={editingProduct}    try {
+
+                        onEdit={setEditingProduct}
+
+                        onDelete={handleProductDelete}      await deleteDoc(doc(db, 'products', productId));      // Fetch pitches  serverTimestamp  serverTimestamp,
+
+                        onUpdate={handleProductUpdate}
+
+                        onCancelEdit={() => setEditingProduct(null)}      toast.success('Product deleted successfully');
+
+                      />
+
+                    )}    } catch (error) {      const pitchesQuery = query(collection(db, 'pitches'), orderBy('createdAt', 'desc'));
+
+                  </motion.div>
+
+                )}      console.error('Error deleting product:', error);
+
+
+
+                {activeTab === 'messages' && (      toast.error('Failed to delete product');      unsubscribers.push(} from 'firebase/firestore';  Timestamp
+
+                  <motion.div
+
+                    initial={{ opacity: 0, y: 20 }}    }
+
+                    animate={{ opacity: 1, y: 0 }}
+
+                    exit={{ opacity: 0, y: -20 }}  };        onSnapshot(pitchesQuery, (snapshot) => {
+
+                    className="space-y-6"
+
+                  >
+
+                    <div className="flex justify-between items-center">
+
+                      <h2 className="text-2xl font-semibold">Messages</h2>  const handleMarkAsRead = async (messageId: string) => {          const pitchesData = snapshot.docs.map((doc) => ({import { db } from '../lib/firebase';} from 'firebase/firestore';
+
+                      <div className="text-sm text-gray-500">
+
+                        {messages.length} messages • {messages.filter((m) => !m.isRead).length} unread    try {
+
+                      </div>
+
+                    </div>      await updateDoc(doc(db, 'messages', messageId), {            id: doc.id,
+
+
+
+                    <MessageList        isRead: true,
+
+                      messages={messages}
+
+                      onMarkAsRead={handleMarkAsRead}        readAt: serverTimestamp(),            ...doc.data(),import { LoadingSpinner } from '../components/ui/loading';import { db } from '../lib/firebase';
+
+                      onDelete={handleProductDelete}
+
+                      isLoading={loading}      });
+
+                    />
+
+                  </motion.div>      toast.success('Message marked as read');          })) as Pitch[];
+
+                )}
+
+    } catch (error) {
+
+                {activeTab === 'pitches' && (
+
+                  <motion.div      console.error('Error marking message as read:', error);          setPitches(pitchesData);import type { Message, Saree, Pitch, CreateSareeInput } from '../types/models';import { LoadingSpinner } from '../components/ui/loading';
+
+                    initial={{ opacity: 0, y: 20 }}
+
+                    animate={{ opacity: 1, y: 0 }}      toast.error('Failed to mark message as read');
+
+                    exit={{ opacity: 0, y: -20 }}
+
+                    className="space-y-6"    }        })
+
+                  >
+
+                    <PitchesTab  };
+
+                      pitches={pitches}
+
+                      onStatusUpdate={handlePitchStatusUpdate}      );import { MessageList } from '../components/MessageList';import type { Message, Saree, Pitch, CreateSareeInput, UpdateSareeInput } from '../types/models';
+
+                      onReply={handlePitchReply}
+
+                    />  const handlePitchStatusUpdate = async (pitchId: string, status: 'approved' | 'rejected') => {
+
+                  </motion.div>
+
+                )}    try {    } catch (error) {
+
+              </>
+
+            )}      await updateDoc(doc(db, 'pitches', pitchId), {
+
+          </AnimatePresence>
+
+        </div>        status,      console.error('Error setting up real-time listeners:', error);import { ProductGrid } from '../components/ProductGrid';import { MessageList } from '../components/MessageList';
+
+      </main>
+
+    </div>        updatedAt: serverTimestamp(),
+
+  );
+
+};      });      toast.error('Failed to set up real-time updates');
+
+
+
+export default AdminDashboard;      toast.success(`Pitch ${status} successfully`);
+
+    } catch (error) {    }import { ProductForm } from '../components/ProductForm';import { ProductGrid } from '../components/ProductGrid';
+
+      console.error('Error updating pitch status:', error);
+
+      toast.error('Failed to update pitch status');
+
+    }
+
+  };    setLoading(false);import { PitchesTab } from '../components/PitchesTab';import { ProductForm } from '../components/ProductForm';
+
+
+
+  const handlePitchReply = async (pitchId: string, reply: string) => {
+
+    try {
+
+      await updateDoc(doc(db, 'pitches', pitchId), {    return () => {import { PitchesTab } from '../components/PitchesTab';
+
+        reply,
+
+        repliedAt: serverTimestamp(),      unsubscribers.forEach((unsubscribe) => unsubscribe());
+
+      });
+
+      toast.success('Reply sent successfully');    };interface AdminDashboardProps {}
+
+    } catch (error) {
+
+      console.error('Error sending reply:', error);  }, []);
+
+      toast.error('Failed to send reply');
+
+    }export const AdminDashboard: React.FC = () => {
+
+  };
+
+  // Responsive sidebar
+
+  return (
+
+    <div className="flex h-screen bg-gray-100">  useEffect(() => {const AdminDashboard: React.FC<AdminDashboardProps> = () => {export const AdminDashboard: React.FC = () => {
+
+      {/* Sidebar */}
+
+      <aside    const handleResize = () => setSidebarOpen(window.innerWidth >= 768);
+
+        className={`
+
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}    window.addEventListener('resize', handleResize);  // State  // State
+
+          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform 
+
+          transition-transform duration-300 ease-in-out md:relative md:translate-x-0    handleResize();
+
+        `}
+
+      >    return () => window.removeEventListener('resize', handleResize);  const [sidebarOpen, setSidebarOpen] = useState(false);  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+        <div className="flex items-center justify-between p-4 border-b">
+
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>  }, []);
+
+          <button
+
+            onClick={() => setSidebarOpen(false)}  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'pitches'>('products');  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'pitches'>('products');
+
+            className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+          >  // Filter products based on search term
+
+            <X className="w-5 h-5" />
+
+          </button>  const filteredProducts = searchTerm.trim() === ''  const [loading, setLoading] = useState(true);  const [loading, setLoading] = useState(true);
+
+        </div>
+
+    ? products
+
+        <nav className="p-4 space-y-2">
+
+          <button    : products.filter((product) =>  const [searchTerm, setSearchTerm] = useState('');  const [searchTerm, setSearchTerm] = useState('');
+
+            onClick={() => setActiveTab('products')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${        [
+
+              activeTab === 'products' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}          product.name?.toLowerCase() ?? '',  const [products, setProducts] = useState<Saree[]>([]);  const [products, setProducts] = useState<Saree[]>([]);
+
+          >
+
+            <Package className="w-5 h-5" />          String(product.price)?.toLowerCase() ?? '',
+
+            <span>Products</span>
+
+          </button>          product.category?.toLowerCase() ?? '',  const [messages, setMessages] = useState<Message[]>([]);  const [messages, setMessages] = useState<Message[]>([]);
+
+
+
+          <button        ].some((field) => field.includes(searchTerm.toLowerCase()))
+
+            onClick={() => setActiveTab('messages')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${      );  const [pitches, setPitches] = useState<Pitch[]>([]);  const [pitches, setPitches] = useState<Pitch[]>([]);
+
+              activeTab === 'messages' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}
+
+          >
+
+            <MessageCircle className="w-5 h-5" />  // Handlers  const [newProductForm, setNewProductForm] = useState(false);  const [newProductForm, setNewProductForm] = useState(false);
+
+            <span>Messages</span>
+
+          </button>  const handleNewProduct = async (productData: CreateSareeInput) => {
+
+
+
+          <button    try {  const [editingProduct, setEditingProduct] = useState<Saree | null>(null);  const [editingProduct, setEditingProduct] = useState<Saree | null>(null);
+
+            onClick={() => setActiveTab('pitches')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${      await addDoc(collection(db, 'products'), {
+
+              activeTab === 'pitches' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}        ...productData,
+
+          >
+
+            <Lightbulb className="w-5 h-5" />        createdAt: serverTimestamp(),
+
+            <span>Pitches</span>
+
+          </button>        updatedAt: serverTimestamp(),  // Data fetching  // Data fetching
+
+        </nav>
+
+      </aside>      });
+
+
+
+      {/* Main Content */}      setNewProductForm(false);  useEffect(() => {  useEffect(() => {
+
+      <main className="flex-1 overflow-auto">
+
+        {/* Top Bar */}      toast.success('Product added successfully');
+
+        <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+
+          <div className="flex items-center justify-between p-4">    } catch (error) {    const unsubscribers: (() => void)[] = [];    const unsubscribers: (() => void)[] = [];
+
+            <button
+
+              onClick={() => setSidebarOpen(true)}      console.error('Error adding product:', error);
+
+              className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+            >      toast.error('Failed to add product');    setLoading(true);    setLoading(true);
+
+              <Menu className="w-5 h-5" />
+
+            </button>    }
+
+
+
+            <div className="flex-1 max-w-xl mx-4">  };
+
+              <div className="relative">
+
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+
+                <input
+
+                  type="text"  const handleProductUpdate = async (productId: string, data: Partial<Saree>) => {    try {    try {
+
+                  placeholder="Search..."
+
+                  value={searchTerm}    try {
+
+                  onChange={(e) => setSearchTerm(e.target.value)}
+
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"      await updateDoc(doc(db, 'products', productId), {      // Fetch products      // Fetch products
+
+                />
+
+              </div>        ...data,
+
+            </div>
+
+        updatedAt: serverTimestamp(),      const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));      const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+
+            <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+
+              <Bell className="w-5 h-5" />      });
+
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+
+            </button>      setEditingProduct(null);      unsubscribers.push(      unsubscribers.push(
+
+          </div>
+
+        </div>      toast.success('Product updated successfully');
+
+
+
+        {/* Content Area */}    } catch (error) {        onSnapshot(productsQuery, (snapshot) => {        onSnapshot(productsQuery, (snapshot) => {
+
+        <div className="p-6">
+
+          <AnimatePresence mode="wait">      console.error('Error updating product:', error);
+
+            {loading ? (
+
+              <div className="flex justify-center items-center h-64">      toast.error('Failed to update product');          const productsData = snapshot.docs.map((doc) => ({          const productsData = snapshot.docs.map((doc) => ({
+
+                <LoadingSpinner />
+
+              </div>    }
+
+            ) : (
+
+              <>  };            id: doc.id,            id: doc.id,
+
+                {activeTab === 'products' && (
+
+                  <motion.div
+
+                    initial={{ opacity: 0, y: 20 }}
+
+                    animate={{ opacity: 1, y: 0 }}  const handleProductDelete = async (productId: string) => {            ...doc.data(),            ...doc.data(),
+
+                    exit={{ opacity: 0, y: -20 }}
+
+                    className="space-y-6"    if (!window.confirm('Are you sure you want to delete this product?')) return;
+
+                  >
+
+                    <div className="flex justify-between items-center">          })) as Saree[];          })) as Saree[];
+
+                      <h2 className="text-2xl font-semibold">Products</h2>
+
+                      <button    try {
+
+                        onClick={() => setNewProductForm(true)}
+
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"      await deleteDoc(doc(db, 'products', productId));          setProducts(productsData);          setProducts(productsData);
+
+                      >
+
+                        <Plus className="w-5 h-5" />      toast.success('Product deleted successfully');
+
+                        <span>Add Product</span>
+
+                      </button>    } catch (error) {        })        })
+
+                    </div>
+
+      console.error('Error deleting product:', error);
+
+                    {newProductForm ? (
+
+                      <ProductForm      toast.error('Failed to delete product');      );      );
+
+                        onSubmit={handleNewProduct}
+
+                        onCancel={() => setNewProductForm(false)}    }
+
+                      />
+
+                    ) : (  };
+
+                      <ProductGrid
+
+                        products={filteredProducts}
+
+                        editingProduct={editingProduct}
+
+                        onEdit={setEditingProduct}  const handleMarkAsRead = async (messageId: string) => {      // Fetch messages      // Fetch messages
+
+                        onDelete={handleProductDelete}
+
+                        onUpdate={handleProductUpdate}    try {
+
+                        onCancelEdit={() => setEditingProduct(null)}
+
+                      />      await updateDoc(doc(db, 'messages', messageId), {      const messagesQuery = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));      const messagesQuery = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+
+                    )}
+
+                  </motion.div>        isRead: true,
+
+                )}
+
+        readAt: serverTimestamp(),      unsubscribers.push(      unsubscribers.push(
+
+                {activeTab === 'messages' && (
+
+                  <motion.div      });
+
+                    initial={{ opacity: 0, y: 20 }}
+
+                    animate={{ opacity: 1, y: 0 }}      toast.success('Message marked as read');        onSnapshot(messagesQuery, (snapshot) => {        onSnapshot(messagesQuery, (snapshot) => {
+
+                    exit={{ opacity: 0, y: -20 }}
+
+                    className="space-y-6"    } catch (error) {
+
+                  >
+
+                    <div className="flex justify-between items-center">      console.error('Error marking message as read:', error);          const messagesData = snapshot.docs.map((doc) => ({          const messagesData = snapshot.docs.map((doc) => ({
+
+                      <h2 className="text-2xl font-semibold">Messages</h2>
+
+                      <div className="text-sm text-gray-500">      toast.error('Failed to mark message as read');
+
+                        {messages.length} messages • {messages.filter((m) => !m.isRead).length} unread
+
+                      </div>    }            id: doc.id,            id: doc.id,
+
+                    </div>
+
+  };
+
+                    <MessageList
+
+                      messages={messages}            ...doc.data(),            ...doc.data(),
+
+                      onMarkAsRead={handleMarkAsRead}
+
+                      onDelete={handleProductDelete}  const handlePitchStatusUpdate = async (pitchId: string, status: 'approved' | 'rejected') => {
+
+                      isLoading={loading}
+
+                    />    try {          })) as Message[];          })) as Message[];
+
+                  </motion.div>
+
+                )}      await updateDoc(doc(db, 'pitches', pitchId), {
+
+
+
+                {activeTab === 'pitches' && (        status,          setMessages(messagesData);          setMessages(messagesData);
+
+                  <motion.div
+
+                    initial={{ opacity: 0, y: 20 }}        updatedAt: serverTimestamp(),
+
+                    animate={{ opacity: 1, y: 0 }}
+
+                    exit={{ opacity: 0, y: -20 }}      });        })        })
+
+                    className="space-y-6"
+
+                  >      toast.success(`Pitch ${status} successfully`);
+
+                    <PitchesTab
+
+                      pitches={pitches}    } catch (error) {      );      );
+
+                      onStatusUpdate={handlePitchStatusUpdate}
+
+                      onReply={handlePitchReply}      console.error('Error updating pitch status:', error);
+
+                    />
+
+                  </motion.div>      toast.error('Failed to update pitch status');
+
+                )}
+
+              </>    }
+
+            )}
+
+          </AnimatePresence>  };      // Fetch pitches      // Fetch pitches
+
+        </div>
+
+      </main>
+
+    </div>
+
+  );  const handlePitchReply = async (pitchId: string, reply: string) => {      const pitchesQuery = query(collection(db, 'pitches'), orderBy('createdAt', 'desc'));      const pitchesQuery = query(collection(db, 'pitches'), orderBy('createdAt', 'desc'));
+
+};
+
+    try {
+
+export default AdminDashboard;
+      await updateDoc(doc(db, 'pitches', pitchId), {      unsubscribers.push(      unsubscribers.push(
+
+        reply,
+
+        repliedAt: serverTimestamp(),        onSnapshot(pitchesQuery, (snapshot) => {        onSnapshot(pitchesQuery, (snapshot) => {
+
+      });
+
+      toast.success('Reply sent successfully');          const pitchesData = snapshot.docs.map((doc) => ({          const pitchesData = snapshot.docs.map((doc) => ({
+
+    } catch (error) {
+
+      console.error('Error sending reply:', error);            id: doc.id,            id: doc.id,
+
+      toast.error('Failed to send reply');
+
+    }            ...doc.data(),            ...doc.data(),
+
+  };
+
+          })) as Pitch[];          })) as Pitch[];
+
+  return (
+
+    <div className="flex h-screen bg-gray-100">          setPitches(pitchesData);          setPitches(pitchesData);
+
+      {/* Sidebar */}
+
+      <aside        })        })
+
+        className={`
+
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}      );      );
+
+          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform 
+
+          transition-transform duration-300 ease-in-out md:relative md:translate-x-0    } catch (error) {    } catch (error) {
+
+        `}
+
+      >      console.error('Error setting up real-time listeners:', error);      console.error('Error setting up real-time listeners:', error);
+
+        <div className="flex items-center justify-between p-4 border-b">
+
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>      toast.error('Failed to set up real-time updates');      toast.error('Failed to set up real-time updates');
+
+          <button
+
+            onClick={() => setSidebarOpen(false)}    }    }
+
+            className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+          >
+
+            <X className="w-5 h-5" />
+
+          </button>    setLoading(false);    setLoading(false);
+
+        </div>
+
+
+
+        <nav className="p-4 space-y-2">
+
+          <button    return () => {    return () => {
+
+            onClick={() => setActiveTab('products')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${      unsubscribers.forEach((unsubscribe) => unsubscribe());      unsubscribers.forEach((unsubscribe) => unsubscribe());
+
+              activeTab === 'products' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}    };    };
+
+          >
+
+            <Package className="w-5 h-5" />  }, []);  }, []);
+
+            <span>Products</span>
+
+          </button>
+
+
+
+          <button  // Responsive sidebar  // Responsive sidebar
+
+            onClick={() => setActiveTab('messages')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${  useEffect(() => {  useEffect(() => {
+
+              activeTab === 'messages' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}    const handleResize = () => setSidebarOpen(window.innerWidth >= 768);    const handleResize = () => {
+
+          >
+
+            <MessageCircle className="w-5 h-5" />    window.addEventListener('resize', handleResize);      setSidebarOpen(window.innerWidth >= 768);
+
+            <span>Messages</span>
+
+          </button>    handleResize();    };
+
+
+
+          <button    return () => window.removeEventListener('resize', handleResize);
+
+            onClick={() => setActiveTab('pitches')}
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${  }, []);    window.addEventListener('resize', handleResize);
+
+              activeTab === 'pitches' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            }`}    handleResize();
+
+          >
+
+            <Lightbulb className="w-5 h-5" />  // Filter products based on search term
+
+            <span>Pitches</span>
+
+          </button>  const filteredProducts = searchTerm.trim() === ''    return () => {
+
+        </nav>
+
+      </aside>    ? products      window.removeEventListener('resize', handleResize);
+
+
+
+      {/* Main Content */}    : products.filter((product) =>    };
+
+      <main className="flex-1 overflow-auto">
+
+        {/* Top Bar */}        [  }, [setSidebarOpen]);
+
+        <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+
+          <div className="flex items-center justify-between p-4">          product.name?.toLowerCase() ?? '',
+
+            <button
+
+              onClick={() => setSidebarOpen(true)}          String(product.price)?.toLowerCase() ?? '',  export default AdminDashboard;
+
+              className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+            >          product.category?.toLowerCase() ?? '',
+
+              <Menu className="w-5 h-5" />
+
+            </button>        ].some((field) => field.includes(searchTerm.toLowerCase()))// Filter products based on search term
+
+
+
+            <div className="flex-1 max-w-xl mx-4">      );  const filteredProducts = searchTerm.trim() === ''
+
+              <div className="relative">
+
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />    ? products
+
+                <input
+
+                  type="text"  // Handlers    : products.filter((product) =>
+
+                  placeholder="Search..."
+
+                  value={searchTerm}  const handleNewProduct = async (productData: CreateSareeInput) => {        [
+
+                  onChange={(e) => setSearchTerm(e.target.value)}
+
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"    try {          product.name?.toLowerCase() ?? '',
+
+                />
+
+              </div>      await addDoc(collection(db, 'products'), {          String(product.price)?.toLowerCase() ?? '',
+
+            </div>
+
+        ...productData,          product.category?.toLowerCase() ?? '',
+
+            <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+
+              <Bell className="w-5 h-5" />        createdAt: serverTimestamp(),        ].some((field) => field.includes(searchTerm.toLowerCase()))
+
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+
+            </button>        updatedAt: serverTimestamp(),      );
+
+          </div>
+
+        </div>      });
+
+
+
+        {/* Content Area */}      setNewProductForm(false);  // Handlers
+
+        <div className="p-6">
+
+          <AnimatePresence mode="wait">      toast.success('Product added successfully');  const handleNewProduct = async (productData: Omit<Saree, 'id' | 'createdAt' | 'updatedAt'>) => {
+
+            {loading ? (
+
+              <div className="flex justify-center items-center h-64">    } catch (error) {    try {
+
+                <LoadingSpinner />
+
+              </div>      console.error('Error adding product:', error);      await addDoc(collection(db, 'products'), {
+
+            ) : (
+
+              <>      toast.error('Failed to add product');        ...productData,
+
+                {activeTab === 'products' && (
+
+                  <motion.div    }        createdAt: serverTimestamp(),
+
+                    initial={{ opacity: 0, y: 20 }}
+
+                    animate={{ opacity: 1, y: 0 }}  };        updatedAt: serverTimestamp(),
+
+                    exit={{ opacity: 0, y: -20 }}
+
+                    className="space-y-6"      });
+
+                  >
+
+                    <div className="flex justify-between items-center">  const handleProductUpdate = async (productId: string, data: Partial<Saree>) => {      setNewProductForm(false);
+
+                      <h2 className="text-2xl font-semibold">Products</h2>
+
+                      <button    try {      toast.success('Product added successfully');
+
+                        onClick={() => setNewProductForm(true)}
+
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"      await updateDoc(doc(db, 'products', productId), {    } catch (error) {
+
+                      >
+
+                        <Plus className="w-5 h-5" />        ...data,      console.error('Error adding product:', error);
+
+                        <span>Add Product</span>
+
+                      </button>        updatedAt: serverTimestamp(),      toast.error('Failed to add product');
+
+                    </div>
+
+      });    }
+
+                    {newProductForm ? (
+
+                      <ProductForm      setEditingProduct(null);  };
+
+                        onSubmit={handleNewProduct}
+
+                        onCancel={() => setNewProductForm(false)}      toast.success('Product updated successfully');
+
+                      />
+
+                    ) : (    } catch (error) {  const handleProductUpdate = async (productId: string, data: Partial<Saree>) => {
+
+                      <ProductGrid
+
+                        products={filteredProducts}      console.error('Error updating product:', error);    try {
+
+                        editingProduct={editingProduct}
+
+                        onEdit={setEditingProduct}      toast.error('Failed to update product');      await updateDoc(doc(db, 'products', productId), {
+
+                        onDelete={handleProductDelete}
+
+                        onUpdate={handleProductUpdate}    }        ...data,
+
+                        onCancelEdit={() => setEditingProduct(null)}
+
+                      />  };        updatedAt: serverTimestamp(),
+
+                    )}
+
+                  </motion.div>      });
+
+                )}
+
+  const handleProductDelete = async (productId: string) => {      setEditingProduct(null);
+
+                {activeTab === 'messages' && (
+
+                  <motion.div    if (!window.confirm('Are you sure you want to delete this product?')) return;      toast.success('Product updated successfully');
+
+                    initial={{ opacity: 0, y: 20 }}
+
+                    animate={{ opacity: 1, y: 0 }}    } catch (error) {
+
+                    exit={{ opacity: 0, y: -20 }}
+
+                    className="space-y-6"    try {      console.error('Error updating product:', error);
+
+                  >
+
+                    <div className="flex justify-between items-center">      await deleteDoc(doc(db, 'products', productId));      toast.error('Failed to update product');
+
+                      <h2 className="text-2xl font-semibold">Messages</h2>
+
+                      <div className="text-sm text-gray-500">      toast.success('Product deleted successfully');    }
+
+                        {messages.length} messages • {messages.filter((m) => !m.isRead).length} unread
+
+                      </div>    } catch (error) {  };
+
+                    </div>
+
+      console.error('Error deleting product:', error);
+
+                    <MessageList
+
+                      messages={messages}      toast.error('Failed to delete product');  const handleProductDelete = async (productId: string) => {
+
+                      onMarkAsRead={handleMarkAsRead}
+
+                      onDelete={handleProductDelete}    }    if (!window.confirm('Are you sure you want to delete this product?')) return;
+
+                      isLoading={loading}
+
+                    />  };
+
+                  </motion.div>
+
+                )}    try {
+
+
+
+                {activeTab === 'pitches' && (  const handleMarkAsRead = async (messageId: string) => {      await deleteDoc(doc(db, 'products', productId));
+
+                  <motion.div
+
+                    initial={{ opacity: 0, y: 20 }}    try {      toast.success('Product deleted successfully');
+
+                    animate={{ opacity: 1, y: 0 }}
+
+                    exit={{ opacity: 0, y: -20 }}      await updateDoc(doc(db, 'messages', messageId), {    } catch (error) {
+
+                    className="space-y-6"
+
+                  >        isRead: true,      console.error('Error deleting product:', error);
+
+                    <PitchesTab
+
+                      pitches={pitches}        readAt: serverTimestamp(),      toast.error('Failed to delete product');
+
+                      onStatusUpdate={handlePitchStatusUpdate}
+
+                      onReply={handlePitchReply}      });    }
+
+                    />
+
+                  </motion.div>      toast.success('Message marked as read');  };
+
+                )}
+
+              </>    } catch (error) {
+
+            )}
+
+          </AnimatePresence>      console.error('Error marking message as read:', error);  const handleMarkAsRead = async (messageId: string) => {
+
+        </div>
+
+      </main>      toast.error('Failed to mark message as read');    try {
+
+    </div>
+
+  );    }      await updateDoc(doc(db, 'messages', messageId), {
+
+};
+
+  };        isRead: true,
+
+export default AdminDashboard;
+        readAt: serverTimestamp(),
+
+  const handlePitchStatusUpdate = async (pitchId: string, status: 'approved' | 'rejected') => {      });
+
+    try {      toast.success('Message marked as read');
+
+      await updateDoc(doc(db, 'pitches', pitchId), {    } catch (error) {
+
+        status,      console.error('Error marking message as read:', error);
+
+        updatedAt: serverTimestamp(),      toast.error('Failed to mark message as read');
+
+      });    }
+
+      toast.success(`Pitch ${status} successfully`);  };
+
+    } catch (error) {
+
+      console.error('Error updating pitch status:', error);  const handlePitchStatusUpdate = async (pitchId: string, status: 'approved' | 'rejected') => {
+
+      toast.error('Failed to update pitch status');    try {
+
+    }      await updateDoc(doc(db, 'pitches', pitchId), {
+
+  };        status,
+
+        updatedAt: serverTimestamp(),
+
+  const handlePitchReply = async (pitchId: string, reply: string) => {      });
+
+    try {      toast.success(`Pitch ${status} successfully`);
+
+      await updateDoc(doc(db, 'pitches', pitchId), {    } catch (error) {
+
+        reply,      console.error('Error updating pitch status:', error);
+
+        repliedAt: serverTimestamp(),      toast.error('Failed to update pitch status');
+
+      });    }
+
+      toast.success('Reply sent successfully');  };
+
+    } catch (error) {
+
+      console.error('Error sending reply:', error);  const handlePitchReply = async (pitchId: string, reply: string) => {
+
+      toast.error('Failed to send reply');    try {
+
+    }      await updateDoc(doc(db, 'pitches', pitchId), {
+
+  };        reply,
+
+        repliedAt: serverTimestamp(),
+
+  return (      });
+
+    <div className="flex h-screen bg-gray-100">      toast.success('Reply sent successfully');
+
+      {/* Sidebar */}    } catch (error) {
+
+      <aside      console.error('Error sending reply:', error);
+
+        className={`      toast.error('Failed to send reply');
+
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}    }
+
+          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform   };
+
+          transition-transform duration-300 ease-in-out md:relative md:translate-x-0
+
+        `}  return (
+
+      >    <div className="flex h-screen bg-gray-100">
+
+        <div className="flex items-center justify-between p-4 border-b">      {/* Sidebar */}
+
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>      <aside
+
+          <button        className={`
+
+            onClick={() => setSidebarOpen(false)}          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+
+            className="p-2 rounded-lg hover:bg-gray-100 md:hidden"          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform 
+
+          >          transition-transform duration-300 ease-in-out md:relative md:translate-x-0
+
+            <X className="w-5 h-5" />        `}
+
+          </button>      >
+
+        </div>        <div className="flex items-center justify-between p-4 border-b">
+
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>
+
+        <nav className="p-4 space-y-2">          <button
+
+          <button            onClick={() => setSidebarOpen(false)}
+
+            onClick={() => setActiveTab('products')}            className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${          >
+
+              activeTab === 'products' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'            <X className="w-5 h-5" />
+
+            }`}          </button>
+
+          >        </div>
+
+            <Package className="w-5 h-5" />
+
+            <span>Products</span>        <nav className="p-4 space-y-2">
+
+          </button>          <button
+
+            onClick={() => setActiveTab('products')}
+
+          <button            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+
+            onClick={() => setActiveTab('messages')}              activeTab === 'products' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${            }`}
+
+              activeTab === 'messages' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'          >
+
+            }`}            <Package className="w-5 h-5" />
+
+          >            <span>Products</span>
+
+            <MessageCircle className="w-5 h-5" />          </button>
+
+            <span>Messages</span>
+
+          </button>          <button
+
+            onClick={() => setActiveTab('messages')}
+
+          <button            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+
+            onClick={() => setActiveTab('pitches')}              activeTab === 'messages' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${            }`}
+
+              activeTab === 'pitches' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'          >
+
+            }`}            <MessageCircle className="w-5 h-5" />
+
+          >            <span>Messages</span>
+
+            <Lightbulb className="w-5 h-5" />          </button>
+
+            <span>Pitches</span>
+
+          </button>          <button
+
+        </nav>            onClick={() => setActiveTab('pitches')}
+
+      </aside>            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+
+              activeTab === 'pitches' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+
+      {/* Main Content */}            }`}
+
+      <main className="flex-1 overflow-auto">          >
+
+        {/* Top Bar */}            <Lightbulb className="w-5 h-5" />
+
+        <div className="sticky top-0 z-40 bg-white border-b shadow-sm">            <span>Pitches</span>
+
+          <div className="flex items-center justify-between p-4">          </button>
+
+            <button        </nav>
+
+              onClick={() => setSidebarOpen(true)}      </aside>
+
+              className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+            >      {/* Main Content */}
+
+              <Menu className="w-5 h-5" />      <main className="flex-1 overflow-auto">
+
+            </button>        {/* Top Bar */}
+
+        <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+
+            <div className="flex-1 max-w-xl mx-4">          <div className="flex items-center justify-between p-4">
+
+              <div className="relative">            <button
+
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />              onClick={() => setSidebarOpen(true)}
+
+                <input              className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+
+                  type="text"            >
+
+                  placeholder="Search..."              <Menu className="w-5 h-5" />
+
+                  value={searchTerm}            </button>
+
+                  onChange={(e) => setSearchTerm(e.target.value)}
+
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"            <div className="flex-1 max-w-xl mx-4">
+
+                />              <div className="relative">
+
+              </div>                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+
+            </div>                <input
+
+                  type="text"
+
+            <button className="p-2 rounded-lg hover:bg-gray-100 relative">                  placeholder="Search..."
+
+              <Bell className="w-5 h-5" />                  value={searchTerm}
+
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>                  onChange={(e) => setSearchTerm(e.target.value)}
+
+            </button>                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+          </div>                />
+
+        </div>              </div>
+
+            </div>
+
+        {/* Content Area */}
+
+        <div className="p-6">            <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+
+          <AnimatePresence mode="wait">              <Bell className="w-5 h-5" />
+
+            {loading ? (              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+
+              <div className="flex justify-center items-center h-64">            </button>
+
+                <LoadingSpinner />          </div>
+
+              </div>        </div>
+
+            ) : (
+
+              <>        {/* Content Area */}
+
+                {activeTab === 'products' && (        <div className="p-6">
+
+                  <motion.div          <AnimatePresence mode="wait">
+
+                    initial={{ opacity: 0, y: 20 }}            {loading ? (
+
+                    animate={{ opacity: 1, y: 0 }}              <div className="flex justify-center items-center h-64">
+
+                    exit={{ opacity: 0, y: -20 }}                <LoadingSpinner />
+
+                    className="space-y-6"              </div>
+
+                  >            ) : (
+
+                    <div className="flex justify-between items-center">              <>
+
+                      <h2 className="text-2xl font-semibold">Products</h2>                {activeTab === 'products' && (
+
+                      <button                  <motion.div
+
+                        onClick={() => setNewProductForm(true)}                    initial={{ opacity: 0, y: 20 }}
+
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"                    animate={{ opacity: 1, y: 0 }}
+
+                      >                    exit={{ opacity: 0, y: -20 }}
+
+                        <Plus className="w-5 h-5" />                    className="space-y-6"
+
+                        <span>Add Product</span>                  >
+
+                      </button>                    <div className="flex justify-between items-center">
+
+                    </div>                      <h2 className="text-2xl font-semibold">Products</h2>
+
+                      <button
+
+                    {newProductForm ? (                        onClick={() => setNewProductForm(true)}
+
+                      <ProductForm                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+
+                        onSubmit={handleNewProduct}                      >
+
+                        onCancel={() => setNewProductForm(false)}                        <Plus className="w-5 h-5" />
+
+                      />                        <span>Add Product</span>
+
+                    ) : (                      </button>
+
+                      <ProductGrid                    </div>
+
+                        products={filteredProducts}
+
+                        editingProduct={editingProduct}                    {newProductForm ? (
+
+                        onEdit={setEditingProduct}                      <ProductForm
+
+                        onDelete={handleProductDelete}                        onSubmit={handleNewProduct}
+
+                        onUpdate={handleProductUpdate}                        onCancel={() => setNewProductForm(false)}
+
+                        onCancelEdit={() => setEditingProduct(null)}                      />
+
+                      />                    ) : (
+
+                    )}                      <ProductGrid
+
+                  </motion.div>                        products={filteredProducts}
+
+                )}                        editingProduct={editingProduct}
+
+                        onEdit={setEditingProduct}
+
+                {activeTab === 'messages' && (                        onDelete={handleProductDelete}
+
+                  <motion.div                        onUpdate={handleProductUpdate}
+
+                    initial={{ opacity: 0, y: 20 }}                        onCancelEdit={() => setEditingProduct(null)}
+
+                    animate={{ opacity: 1, y: 0 }}                      />
+
+                    exit={{ opacity: 0, y: -20 }}                    )}
+
+                    className="space-y-6"                  </motion.div>
+
+                  >                )}
+
+                    <div className="flex justify-between items-center">
+
+                      <h2 className="text-2xl font-semibold">Messages</h2>                {activeTab === 'messages' && (
+
+                      <div className="text-sm text-gray-500">                  <motion.div
+
+                        {messages.length} messages • {messages.filter((m) => !m.isRead).length} unread                    initial={{ opacity: 0, y: 20 }}
+
+                      </div>                    animate={{ opacity: 1, y: 0 }}
+
+                    </div>                    exit={{ opacity: 0, y: -20 }}
+
+                    className="space-y-6"
+
+                    <MessageList                  >
+
+                      messages={messages}                    <div className="flex justify-between items-center">
+
+                      onMarkAsRead={handleMarkAsRead}                      <h2 className="text-2xl font-semibold">Messages</h2>
+
+                      onDelete={handleProductDelete}                      <div className="text-sm text-gray-500">
+
+                      isLoading={loading}                        {messages.length} messages • {messages.filter((m) => !m.isRead).length} unread
+
+                    />                      </div>
+
+                  </motion.div>                    </div>
+
+                )}
+
+                    <MessageList
+
+                {activeTab === 'pitches' && (                      messages={messages}
+
+                  <motion.div                      onMarkAsRead={handleMarkAsRead}
+
+                    initial={{ opacity: 0, y: 20 }}                      onDelete={handleProductDelete}
+
+                    animate={{ opacity: 1, y: 0 }}                      isLoading={loading}
+
+                    exit={{ opacity: 0, y: -20 }}                    />
+
+                    className="space-y-6"                  </motion.div>
+
+                  >                )}
+
+                    <PitchesTab
+
+                      pitches={pitches}                {activeTab === 'pitches' && (
+
+                      onStatusUpdate={handlePitchStatusUpdate}                  <motion.div
+
+                      onReply={handlePitchReply}                    initial={{ opacity: 0, y: 20 }}
+
+                    />                    animate={{ opacity: 1, y: 0 }}
+
+                  </motion.div>                    exit={{ opacity: 0, y: -20 }}
+
+                )}                    className="space-y-6"
+
+              </>                  >
+
+            )}                    <PitchesTab
+
+          </AnimatePresence>                      pitches={pitches}
+
+        </div>                      onStatusUpdate={handlePitchStatusUpdate}
+
+      </main>                      onReply={handlePitchReply}
+
+    </div>                    />
+
+  );                  </motion.div>
+
+};                )}
+
+              </>
+
+export default AdminDashboard;            )}
+          </AnimatePresence>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+
+
+  // Data fetching effect
+  useEffect(() => {
+    const unsubscribers: (() => void)[] = [];
+    setLoading(true);
+
+    try {
+      // Fetch products
+      const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+      unsubscribers.push(onSnapshot(productsQuery, (snapshot) => {
+        const productsData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Saree[];
+        setProducts(productsData);
+      }));
+
+      // Fetch messages
+      const messagesQuery = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+      unsubscribers.push(onSnapshot(messagesQuery, (snapshot) => {
+        const messagesData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Message[];
+        setMessages(messagesData);
+      }));
+
+      // Fetch pitches
+      const pitchesQuery = query(collection(db, 'pitches'), orderBy('createdAt', 'desc'));
+      unsubscribers.push(onSnapshot(pitchesQuery, (snapshot) => {
+        const pitchesData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Pitch[];
+        setPitches(pitchesData);
+      }));
+    } catch (error) {
+      console.error('Error setting up real-time listeners:', error);
+      toast.error('Failed to set up real-time updates');
+    }
+
+    setLoading(false);
+
+    return () => {
+      unsubscribers.forEach(unsubscribe => unsubscribe());
+    };
+  }, []);
+
+  // Handle sidebar responsiveness
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Filter products based on search term
+  const filteredProducts = searchTerm.trim() === ''
+    ? products
+    : products.filter((product) =>
+        [
+          product.name?.toLowerCase() ?? '',
+          String(product.price)?.toLowerCase() ?? '',
+          product.category?.toLowerCase() ?? '',
+        ].some((field) => field.includes(searchTerm.toLowerCase()))
+      );
+
+      try {
+        if (activeTab === 'products') {
+          const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+          unsubscribe = onSnapshot(q, (snapshot) => {
+            const productData = snapshot.docs.map(doc => ({ 
+              id: doc.id, 
+              ...doc.data() 
+            })) as Saree[];
+            setProducts(productData);
+            setLoading(false);
+          });
+        } else if (activeTab === 'messages') {
+          const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+          unsubscribe = onSnapshot(q, (snapshot) => {
+            const messageData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            })) as Message[];
+            setMessages(messageData);
+            setLoading(false);
+          }, (error) => {
+            console.error('Error fetching messages:', error);
+            toast.error('Failed to fetch messages');
+            setLoading(false);
+          });
+        } else if (activeTab === 'pitches') {
+          const q = query(collection(db, 'pitches'), orderBy('created_at', 'desc'));
+          unsubscribe = onSnapshot(q, (snapshot) => {
+            const pitchData: Pitch[] = [];
+            snapshot.forEach((doc) => {
+              pitchData.push({ id: doc.id, ...doc.data() } as Pitch);
+            });
+            setPitches(pitchData);
+            setLoading(false);
+          }, (error) => {
+            console.error('Error fetching pitches:', error);
+            toast.error('Failed to fetch pitches');
+            setLoading(false);
+          });
+        }
+      } catch (error) {
+        console.error('Error setting up real-time listener:', error);
+        toast.error('Failed to set up real-time updates');
+        setLoading(false);
+      }
+    };
+
+    setupRealTimeListener();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [activeTab]);
+
+
+
+  const tabButtonClass = (tab: 'products' | 'messages' | 'pitches') =>
+    `px-4 py-2 rounded-lg ${
+      activeTab === tab
+        ? 'bg-blue-600 text-white'
+        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+    }`;
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside
+        className={`
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0
+        `}
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <nav className="p-4 space-y-2">
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+              activeTab === 'products' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+            }`}
+          >
+            <Package className="w-5 h-5" />
+            <span>Products</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+              activeTab === 'messages' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+            }`}
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span>Messages</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('pitches')}
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+              activeTab === 'pitches' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+            }`}
+          >
+            <Lightbulb className="w-5 h-5" />
+            <span>Pitches</span>
+          </button>
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto">
+        {/* Top Bar */}
+        <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+          <div className="flex items-center justify-between p-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <div className="flex-1 max-w-xl mx-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="p-6">
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <LoadingSpinner />
+              </div>
+            ) : (
+              <>
+                {activeTab === 'products' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-2xl font-semibold">Products</h2>
+                      <button
+                        onClick={() => setNewProductForm(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Plus className="w-5 h-5" />
+                        <span>Add Product</span>
+                      </button>
+                    </div>
+
+                    {newProductForm ? (
+                      <ProductForm
+                        onSubmit={handleNewProduct}
+                        onCancel={() => setNewProductForm(false)}
+                      />
+                    ) : (
+                      <ProductGrid
+                        products={filteredProducts}
+                        editingProduct={editingProduct}
+                        onEdit={setEditingProduct}
+                        onDelete={handleProductDelete}
+                        onUpdate={handleProductUpdate}
+                        onCancelEdit={() => setEditingProduct(null)}
+                      />
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === 'messages' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-2xl font-semibold">Messages</h2>
+                      <div className="text-sm text-gray-500">
+                        {messages.length} messages • {messages.filter(m => !m.isRead).length} unread
+                      </div>
+                    </div>
+
+                    <MessageList
+                      messages={messages}
+                      onMarkAsRead={(id) => handleMessageReply(id, '')}
+                      onDelete={handleProductDelete}
+                      isLoading={loading}
+                    />
+                  </motion.div>
+                )}
+
+                {activeTab === 'pitches' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    <PitchesTab
+                      pitches={pitches}
+                      onStatusUpdate={handlePitchStatusUpdate}
+                      onReply={handlePitchReply}
+                    />
+                  </motion.div>
+                )}
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default AdminDashboard;

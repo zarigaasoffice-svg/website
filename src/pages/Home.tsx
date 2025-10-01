@@ -9,7 +9,7 @@ export default function Home() {
 
   const featuredSarees = sarees.slice(0, 6);
   const topPitchedSarees = sarees
-    .filter(saree => saree.pitch_count > 0)
+    .filter(saree => (saree as any).pitch_count > 0)
     .slice(0, 3);
 
   return (

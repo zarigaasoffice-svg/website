@@ -14,7 +14,7 @@ import {
   DocumentData
 } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../lib/firebase-config';
+import { db } from '../lib/firebase';
 
 interface FirestoreHookOptions {
   collection: string;

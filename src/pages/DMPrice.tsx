@@ -6,7 +6,7 @@ import SareeCard from '../components/SareeCard';
 export default function DMPrice() {
   const { sarees, loading } = useData();
 
-  const dmPriceSarees = sarees.filter(saree => saree.price_type === 'dm');
+  const dmPriceSarees = sarees.filter(saree => saree.priceType === 'dm');
 
   return (
     <div className="min-h-screen bg-black py-16">
