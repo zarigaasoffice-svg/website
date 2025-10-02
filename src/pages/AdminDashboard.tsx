@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Package, MessageCircle, Lightbulb, Menu, Bell, X, Plus, Search } from 'lucide-react';
+import { Package, MessageCircle, Menu, Bell, X, Plus, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import {
   collection,
   query,
   orderBy,
-  where,
-  getDocs,
   onSnapshot,
   deleteDoc,
   doc,
@@ -17,25 +15,22 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { LoadingSpinner } from '../components/ui/loading';
-import type { Message, Saree, Pitch, CreateSareeInput } from '../types/models';
+import type { Message, Saree, CreateSareeInput } from '../types/models';
 import { MessageList } from '../components/MessageList';
 import { ProductGrid } from '../components/ProductGrid';
 import { ProductForm } from '../components/ProductForm';
-import { PitchesTab } from '../components/PitchesTab';
 
 const AdminDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'pitches'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'messages'>('products');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [notifications, setNotifications] = useState({
     unreadMessages: 0,
-    unreadPitches: 0,
     totalNotifications: 0
   });
   const [products, setProducts] = useState<Saree[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [pitches, setPitches] = useState<Pitch[]>([]);
   const [newProductForm, setNewProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Saree | null>(null);
 
@@ -76,34 +71,13 @@ const AdminDashboard: React.FC = () => {
             setNotifications(prev => ({
               ...prev,
               unreadMessages: unreadCount,
-              totalNotifications: prev.unreadPitches + unreadCount
+              totalNotifications: unreadCount
             }));
           },
           error: (error) => {
             console.error('Error loading messages:', error);
             toast.error('Error loading messages');
           }
-        })
-      );
-
-      // Load pitches
-      const pitchesQuery = query(collection(db, 'pitches'), orderBy('createdAt', 'desc'));
-      unsubscribers.push(
-        onSnapshot(pitchesQuery, (snapshot) => {
-          const pitchesData = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-            status: doc.data().status || 'pending',
-            createdAt: doc.data().createdAt?.toDate(),
-          })) as Pitch[];
-          setPitches(pitchesData);
-          
-          const pendingCount = pitchesData.filter(p => p.status === 'pending').length;
-          setNotifications(prev => ({
-            ...prev,
-            unreadPitches: pendingCount,
-            totalNotifications: prev.unreadMessages + pendingCount
-          }));
         })
       );
     } catch (error) {
@@ -139,8 +113,7 @@ const AdminDashboard: React.FC = () => {
         price: productData.priceType === 'dm' ? 0 : productData.price,
         stock: Number(productData.stock) || 0, // ✅ force number
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        pitch_count: 0
+        updatedAt: serverTimestamp()
       };
 
       await addDoc(collection(db, 'sarees'), dataToSave);
@@ -171,15 +144,6 @@ const AdminDashboard: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const pitchesRef = collection(db, 'pitches');
-      const q = query(pitchesRef, where('sareeId', '==', productId));
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        toast.error('Cannot delete product with active pitches');
-        return;
-      }
-
       await deleteDoc(doc(db, 'sarees', productId));
       toast.success('Product deleted successfully');
     } catch (error) {
@@ -211,36 +175,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handlePitchStatusUpdate = async (pitchId: string, status: 'approved' | 'rejected') => {
-    try {
-      await updateDoc(doc(db, 'pitches', pitchId), {
-        status,
-        updatedAt: serverTimestamp(),
-        handledAt: serverTimestamp(),
-        handledBy: 'admin'
-      });
-      toast.success(`Pitch ${status} successfully`);
-    } catch (error) {
-      console.error('Error updating pitch status:', error);
-      toast.error('Failed to update pitch status');
-    }
-  };
 
-  const handlePitchReply = async (pitchId: string, reply: string) => {
-    try {
-      await updateDoc(doc(db, 'pitches', pitchId), {
-        reply,
-        status: 'replied',
-        repliedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        handledBy: 'admin'
-      });
-      toast.success('Reply sent successfully');
-    } catch (error) {
-      console.error('Error sending reply:', error);
-      toast.error('Failed to send reply');
-    }
-  };
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -301,24 +236,7 @@ const AdminDashboard: React.FC = () => {
             </div>
           </button>
 
-          <button
-            onClick={() => setActiveTab('pitches')}
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-              activeTab === 'pitches' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
-            }`}
-          >
-            <div className="flex items-center justify-between flex-1">
-              <div className="flex items-center space-x-3">
-                <Lightbulb className="w-5 h-5" />
-                <span>Pitches</span>
-              </div>
-              {notifications.unreadPitches > 0 && (
-                <span className="bg-blue-100 text-blue-600 text-xs rounded-full px-2 py-1">
-                  {notifications.unreadPitches}
-                </span>
-              )}
-            </div>
-          </button>
+
         </nav>
       </aside>
 
@@ -423,20 +341,7 @@ const AdminDashboard: React.FC = () => {
                   </motion.div>
                 )}
 
-                {activeTab === 'pitches' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="space-y-6"
-                  >
-                    <PitchesTab
-                      pitches={pitches}
-                      onStatusUpdate={handlePitchStatusUpdate}
-                      onReply={handlePitchReply}
-                    />
-                  </motion.div>
-                )}
+
               </>
             )}
           </AnimatePresence>

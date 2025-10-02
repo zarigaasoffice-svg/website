@@ -72,6 +72,23 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           </select>
         </div>
 
+        {/* Loom Type - Only for Fixed Price */}
+        {formData.priceType === 'fixed' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Loom Type</label>
+            <select
+              value={formData.category || ''}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value as 'handloom' | 'powerloom' })}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              required
+            >
+              <option value="">Select Loom Type</option>
+              <option value="handloom">Hand Loom</option>
+              <option value="powerloom">Power Loom</option>
+            </select>
+          </div>
+        )}
+
         {/* Stock */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Stock</label>
@@ -109,24 +126,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
             rows={3}
           />
-        </div>
-
-        {/* Category */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Category</label>
-          <select
-            value={formData.category || ''}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-            required
-          >
-            <option value="">Select category</option>
-            <option value="Silk">Silk</option>
-            <option value="Cotton">Cotton</option>
-            <option value="Linen">Linen</option>
-            <option value="Designer">Designer</option>
-            <option value="Traditional">Traditional</option>
-          </select>
         </div>
 
         {/* Image URL */}

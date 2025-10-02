@@ -9,7 +9,7 @@ const sareeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   priceType: z.enum(['fixed', 'dm']),
   price: z.number().min(0, 'Price must be a positive number').optional(),
-  category: z.string().min(1, 'Category is required'),
+  category: z.enum(['handloom', 'powerloom'], { required_error: 'Category is required' }),
   stock: z.number().min(0, 'Stock must be a non-negative number'),
   imageUrl: z.string().url('Please enter a valid image URL'),
 }).refine(data => {
@@ -108,14 +108,17 @@ const SareeForm: React.FC<SareeFormProps> = ({
 
       <div>
         <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-          Category
+          Loom Type
         </label>
-        <input
-          type="text"
+        <select
           id="category"
           {...register('category')}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-        />
+        >
+          <option value="">Select Loom Type</option>
+          <option value="handloom">Hand Loom</option>
+          <option value="powerloom">Power Loom</option>
+        </select>
         {errors.category && (
           <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
         )}

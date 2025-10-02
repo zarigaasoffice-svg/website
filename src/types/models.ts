@@ -9,6 +9,7 @@ export interface Saree {
   imageUrl: string;
   description?: string;
   priceType: 'fixed' | 'dm';
+  loomType: 'handloom' | 'powerloom';
   pitch_count?: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;

@@ -88,14 +88,6 @@ export default function Header() {
                     >
                       Admin
                     </Link>
-                    <Link
-                      to="/admin/messages"
-                      className={`text-sm font-medium transition-colors duration-300 ${
-                        isActive('/admin/messages') ? 'text-rose-gold' : 'text-white hover:text-rose-gold'
-                      }`}
-                    >
-                      Admin Messages
-                    </Link>
                   </>
                 )}
                 <button
@@ -176,13 +168,6 @@ export default function Header() {
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Admin
-                      </Link>
-                      <Link
-                        to="/admin/messages"
-                        className="block px-3 py-2 text-base font-medium text-white hover:text-rose-gold transition-colors duration-300"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Admin Messages
                       </Link>
                     </>
                   )}

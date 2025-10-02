@@ -7,7 +7,6 @@ import SareeCard from '../components/SareeCard';
 export default function Home() {
   const { sarees, loading } = useData();
 
-  const featuredSarees = sarees.slice(0, 6);
   const topPitchedSarees = sarees
     .filter(saree => (saree as any).pitch_count > 0)
     .slice(0, 3);
@@ -70,7 +69,7 @@ export default function Home() {
                 <TrendingUp className="w-8 h-8 text-rose-gold" />
               </div>
               <h3 className="text-3xl font-bold text-white mb-2">
-                {sarees.reduce((sum, saree) => sum + saree.pitch_count, 0)}
+                {sarees.reduce((sum, saree) => sum + (saree.pitch_count || 0), 0)}
               </h3>
               <p className="text-gray-300">Total Pitches</p>
             </div>
@@ -103,7 +102,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredSarees.map((saree) => (
+              {sarees.filter(saree => saree.priceType === 'fixed').slice(0, 6).map((saree) => (
                 <SareeCard key={saree.id} saree={saree} />
               ))}
             </div>

@@ -4,7 +4,6 @@ import { Search, Filter } from 'lucide-react';
 
 interface FilterValues {
   search: string;
-  category: string;
   minPrice: string;
   maxPrice: string;
   inStock: boolean;
@@ -12,13 +11,11 @@ interface FilterValues {
 
 interface SareeFiltersProps {
   filters: FilterValues;
-  categories: string[];
   onChange: (filters: FilterValues) => void;
 }
 
 const SareeFilters: React.FC<SareeFiltersProps> = ({
   filters,
-  categories,
   onChange,
 }) => {
   const handleChange = (
@@ -50,26 +47,6 @@ const SareeFilters: React.FC<SareeFiltersProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-            Category
-          </label>
-          <select
-            id="category"
-            name="category"
-            value={filters.category}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            <option value="">All Categories</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <div>
           <label htmlFor="minPrice" className="block text-sm font-medium text-gray-700">
             Min Price
