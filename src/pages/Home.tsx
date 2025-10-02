@@ -16,10 +16,14 @@ export default function Home() {
     <div className="min-h-screen bg-black">
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60 z-10"></div>
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 bg-center bg-no-repeat"
           style={{
-            backgroundImage: 'linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url("https://images.pexels.com/photos/7673219/pexels-photo-7673219.jpeg?auto=compress&cs=tinysrgb&w=1920")'
+            backgroundImage: `url('https://res.cloudinary.com/ddxc429ot/image/upload/v1759376502/rosehd_1_fzy6xi.png')`,
+            backgroundSize: '60%',
+            backgroundPosition: 'center',
+            transform: 'scale(1.0)'
           }}
         />
         
@@ -30,7 +34,7 @@ export default function Home() {
           </h1>
           <p className="text-xl md:text-2xl text-gray-200 mb-8 leading-relaxed">
             Discover timeless elegance with our curated collection of premium silk sarees. 
-            Each piece tells a story of tradition, craftsmanship, and beauty.
+            From direct manufacturers.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
             <Link
