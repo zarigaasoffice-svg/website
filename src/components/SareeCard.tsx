@@ -8,7 +8,7 @@ interface SareeCardProps {
 export default function SareeCard({ saree }: SareeCardProps) {
   const openWhatsApp = () => {
     const message = `Hi, I'm interested in this saree: ${saree.name} - ${saree.priceType === 'fixed' ? `Price: ₹${saree.price}` : 'DM Price'}`;
-    const whatsappUrl = `https://wa.me/918940451465?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/918838043994?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
